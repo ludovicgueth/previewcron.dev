@@ -34,15 +34,18 @@ export function ConfigForm({ onSubmit, error }: ConfigFormProps) {
   const [previewUrl, setPreviewUrl] = useState("");
   const [token, setToken] = useState("");
   const [customHeaders, setCustomHeaders] = useState("");
-  const [savedConfigs, setSavedConfigs] = useState<SavedConfig[]>(
-    getSavedConfigs()
-  );
+  const [savedConfigs, setSavedConfigs] = useState<SavedConfig[]>([]);
   const [selectedConfigName, setSelectedConfigName] = useState<string>("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isCorsDialogOpen, setIsCorsDialogOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Load saved configs only on client side to avoid hydration mismatch
+  useEffect(() => {
+    setSavedConfigs(getSavedConfigs());
+  }, []);
 
   const isLocalhost =
     previewUrl.includes("localhost") || previewUrl.includes("127.0.0.1");
