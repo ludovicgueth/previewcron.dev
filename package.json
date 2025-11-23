@@ -6,7 +6,7 @@
   "homepage": "https://previewcron.dev",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ludovicgueth/previewcron"
+    "url": "https://github.com/ludovicgueth/previewcron.dev"
   },
   "license": "MIT",
   "packageManager": "bun@1.3.0",

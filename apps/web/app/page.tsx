@@ -256,7 +256,7 @@ export default function Home() {
             </p>
           </div>
           <a
-            href="https://github.com/ludovicgueth/previewcron"
+            href="https://github.com/ludovicgueth/previewcron.dev"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
