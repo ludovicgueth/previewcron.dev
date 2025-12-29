@@ -1,22 +1,14 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import type { SavedConfig } from "../types";
+import { getSavedConfigs } from "../utils/configStorage";
+import { CONFIG_DEBOUNCE_MS } from "../constants";
 import {
-  getSavedConfigs,
-  saveConfig,
-  deleteConfig,
-} from "../utils/configStorage";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { FileCode } from "lucide-react";
+  SaveConfigDialog,
+  DeleteConfigDialog,
+  CorsSetupDialog,
+} from "./dialogs";
 
 interface ConfigFormProps {
   onSubmit: (
@@ -28,21 +20,87 @@ interface ConfigFormProps {
   error: string;
 }
 
+interface JsonValidation {
+  isValid: boolean;
+  error: string | null;
+  cronCount: number;
+}
+
+function validateVercelJson(json: string): JsonValidation {
+  if (!json.trim()) {
+    return { isValid: true, error: null, cronCount: 0 };
+  }
+
+  try {
+    const parsed = JSON.parse(json);
+
+    if (typeof parsed !== "object" || parsed === null) {
+      return { isValid: false, error: "JSON must be an object", cronCount: 0 };
+    }
+
+    if (!parsed.crons) {
+      return {
+        isValid: false,
+        error: 'Missing "crons" property',
+        cronCount: 0,
+      };
+    }
+
+    if (!Array.isArray(parsed.crons)) {
+      return {
+        isValid: false,
+        error: '"crons" must be an array',
+        cronCount: 0,
+      };
+    }
+
+    if (parsed.crons.length === 0) {
+      return { isValid: false, error: "No cron jobs defined", cronCount: 0 };
+    }
+
+    for (let i = 0; i < parsed.crons.length; i++) {
+      const cron = parsed.crons[i];
+      if (!cron.path || typeof cron.path !== "string") {
+        return {
+          isValid: false,
+          error: `Cron ${i + 1}: missing or invalid "path"`,
+          cronCount: 0,
+        };
+      }
+      if (!cron.schedule || typeof cron.schedule !== "string") {
+        return {
+          isValid: false,
+          error: `Cron ${i + 1}: missing or invalid "schedule"`,
+          cronCount: 0,
+        };
+      }
+    }
+
+    return { isValid: true, error: null, cronCount: parsed.crons.length };
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Invalid JSON";
+    return { isValid: false, error: message, cronCount: 0 };
+  }
+}
+
 export function ConfigForm({ onSubmit, error }: ConfigFormProps) {
-  const [configName, setConfigName] = useState("");
   const [vercelJson, setVercelJson] = useState("");
   const [previewUrl, setPreviewUrl] = useState("");
   const [token, setToken] = useState("");
   const [customHeaders, setCustomHeaders] = useState("");
   const [savedConfigs, setSavedConfigs] = useState<SavedConfig[]>([]);
   const [selectedConfigName, setSelectedConfigName] = useState<string>("");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isCorsDialogOpen, setIsCorsDialogOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Load saved configs only on client side to avoid hydration mismatch
+  // Real-time JSON validation
+  const jsonValidation = useMemo(
+    () => validateVercelJson(vercelJson),
+    [vercelJson]
+  );
+
+  // Load saved configs only on client side
   useEffect(() => {
     setSavedConfigs(getSavedConfigs());
   }, []);
@@ -50,67 +108,13 @@ export function ConfigForm({ onSubmit, error }: ConfigFormProps) {
   const isLocalhost =
     previewUrl.includes("localhost") || previewUrl.includes("127.0.0.1");
 
-  const corsSnippet = `// Create this file: middleware.ts (in your app's root directory)
-// This allows previewcron.dev to call your localhost API endpoints
-
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
-
-export function middleware(request: NextRequest) {
-  // Only enable CORS in development (disabled in production)
-  if (process.env.NODE_ENV !== 'development') {
-    return NextResponse.next();
-  }
-
-  const origin = request.headers.get('origin');
-  const allowedOrigin = 'https://previewcron.dev';
-
-  // Handle CORS preflight (OPTIONS request)
-  if (request.method === 'OPTIONS') {
-    if (origin === allowedOrigin) {
-      return new NextResponse(null, {
-        status: 204,
-        headers: {
-          'Access-Control-Allow-Origin': allowedOrigin,
-          'Access-Control-Allow-Methods': 'GET, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-          'Access-Control-Max-Age': '86400',
-        },
-      });
-    }
-    return new NextResponse(null, { status: 204 });
-  }
-
-  // Handle actual request (GET, etc.)
-  const response = NextResponse.next();
-  if (origin === allowedOrigin) {
-    response.headers.set('Access-Control-Allow-Origin', allowedOrigin);
-    response.headers.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
-    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  }
-
-  return response;
-}
-
-export const config = {
-  matcher: '/api/cron/:path*',
-};`;
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(corsSnippet);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
   // Debounced auto-submit when config changes
   useEffect(() => {
-    // Clear existing timer
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
 
-    // Only auto-submit if both fields have values
-    if (vercelJson && previewUrl) {
+    if (vercelJson && previewUrl && jsonValidation.isValid) {
       debounceTimerRef.current = setTimeout(() => {
         onSubmit(
           vercelJson,
@@ -118,52 +122,21 @@ export const config = {
           token || undefined,
           customHeaders || undefined
         );
-      }, 500); // 500ms debounce
+      }, CONFIG_DEBOUNCE_MS);
     }
 
-    // Cleanup
     return () => {
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
       }
     };
-    // onSubmit is intentionally excluded from deps to prevent unnecessary re-renders
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vercelJson, previewUrl, token, customHeaders]);
-
-  const handleSaveConfig = () => {
-    if (!configName.trim()) {
-      return;
-    }
-
-    if (!vercelJson || !previewUrl) {
-      setIsDialogOpen(false);
-      return;
-    }
-
-    const config: SavedConfig = {
-      name: configName,
-      vercelJson,
-      previewUrl,
-      deployProtectionToken: token || undefined,
-      customHeaders: customHeaders || undefined,
-    };
-
-    saveConfig(config);
-    setSavedConfigs(getSavedConfigs());
-    setSelectedConfigName(configName);
-    setIsDialogOpen(false);
-    setConfigName("");
-  };
+  }, [vercelJson, previewUrl, token, customHeaders, jsonValidation.isValid]);
 
   const handleLoadConfig = (configName: string) => {
     if (!configName) return;
-
-    const configs = getSavedConfigs();
-    const config = configs.find((c) => c.name === configName);
-
+    const config = savedConfigs.find((c) => c.name === configName);
     if (config) {
-      setConfigName(config.name);
       setVercelJson(config.vercelJson);
       setPreviewUrl(config.previewUrl);
       setToken(config.deployProtectionToken || "");
@@ -174,32 +147,19 @@ export const config = {
   const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const name = e.target.value;
     setSelectedConfigName(name);
-    if (name) {
-      handleLoadConfig(name);
-    }
-  };
-
-  const handleDeleteConfig = () => {
-    if (!selectedConfigName) return;
-    setIsDeleteDialogOpen(true);
-  };
-
-  const confirmDeleteConfig = () => {
-    if (!selectedConfigName) return;
-    deleteConfig(selectedConfigName);
-    setSavedConfigs(getSavedConfigs());
-    setSelectedConfigName("");
-    setIsDeleteDialogOpen(false);
+    if (name) handleLoadConfig(name);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(
-      vercelJson,
-      previewUrl,
-      token || undefined,
-      customHeaders || undefined
-    );
+    if (jsonValidation.isValid) {
+      onSubmit(
+        vercelJson,
+        previewUrl,
+        token || undefined,
+        customHeaders || undefined
+      );
+    }
   };
 
   return (
@@ -226,7 +186,7 @@ export const config = {
               {selectedConfigName && (
                 <button
                   type="button"
-                  onClick={handleDeleteConfig}
+                  onClick={() => setIsDeleteDialogOpen(true)}
                   title="Delete selected configuration"
                   className="rounded-md border border-zinc-300 px-3 py-1.5 text-zinc-600 hover:border-red-300 hover:bg-red-50 hover:text-red-700 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-red-700 dark:hover:bg-red-900/20 dark:hover:text-red-400"
                 >
@@ -247,150 +207,63 @@ export const config = {
               )}
             </>
           )}
-          <Dialog
-            open={isDialogOpen}
-            onOpenChange={(open) => {
-              setIsDialogOpen(open);
-              if (!open) {
-                setConfigName("");
-              }
-            }}
-          >
-            <DialogTrigger asChild>
-              <button
-                type="button"
-                className="flex items-center gap-1.5 rounded-md bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:ring-offset-2 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
-              >
-                <svg
-                  className="h-4 w-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 4v16m8-8H4"
-                  />
-                </svg>
-              </button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Save Configuration</DialogTitle>
-                <DialogDescription>
-                  Save your current configuration for quick reuse later. Stored
-                  securely in your browser local storage.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div>
-                  <label
-                    htmlFor="dialog-config-name"
-                    className="mb-2 block text-sm font-medium text-zinc-900 dark:text-zinc-100"
-                  >
-                    Configuration Name
-                  </label>
-                  <input
-                    type="text"
-                    id="dialog-config-name"
-                    value={configName}
-                    onChange={(e) => setConfigName(e.target.value)}
-                    placeholder="e.g., your-app-name - localhost"
-                    className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
-                  />
-                </div>
-                {previewUrl && (
-                  <div className="rounded-md bg-zinc-100 p-3 dark:bg-zinc-800">
-                    <p className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                      Preview:
-                    </p>
-                    <p className="mt-1 font-mono text-sm text-zinc-900 dark:text-zinc-100">
-                      {previewUrl}
-                    </p>
-                  </div>
-                )}
-              </div>
-              <DialogFooter>
-                <button
-                  type="button"
-                  onClick={() => setIsDialogOpen(false)}
-                  className="rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-800"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSaveConfig}
-                  disabled={!configName.trim()}
-                  className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
-                >
-                  Save
-                </button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
 
-          <Dialog
-            open={isDeleteDialogOpen}
+          <SaveConfigDialog
+            previewUrl={previewUrl}
+            vercelJson={vercelJson}
+            token={token}
+            customHeaders={customHeaders}
+            onSave={(configs, savedName) => {
+              setSavedConfigs(configs);
+              setSelectedConfigName(savedName);
+            }}
+          />
+
+          <DeleteConfigDialog
+            isOpen={isDeleteDialogOpen}
             onOpenChange={setIsDeleteDialogOpen}
-          >
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Delete Configuration</DialogTitle>
-                <DialogDescription>
-                  Are you sure you want to delete this configuration? This
-                  action cannot be undone.
-                </DialogDescription>
-              </DialogHeader>
-              {selectedConfigName && (
-                <div className="rounded-md bg-zinc-100 p-3 dark:bg-zinc-800">
-                  <p className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                    Configuration:
-                  </p>
-                  <p className="mt-1 font-mono text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                    {selectedConfigName}
-                  </p>
-                </div>
-              )}
-              <DialogFooter>
-                <button
-                  type="button"
-                  onClick={() => setIsDeleteDialogOpen(false)}
-                  className="rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={confirmDeleteConfig}
-                  className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800"
-                >
-                  Delete
-                </button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+            configName={selectedConfigName}
+            onDelete={(configs) => {
+              setSavedConfigs(configs);
+              setSelectedConfigName("");
+            }}
+          />
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label
-            htmlFor="vercel-json"
-            className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
-          >
-            vercel.json content
-          </label>
+          <div className="mb-2 flex items-center justify-between">
+            <label
+              htmlFor="vercel-json"
+              className="text-sm font-medium text-zinc-700 dark:text-zinc-300"
+            >
+              vercel.json content
+            </label>
+            {jsonValidation.cronCount > 0 && (
+              <span className="text-xs text-green-600 dark:text-green-400">
+                {jsonValidation.cronCount} cron job
+                {jsonValidation.cronCount !== 1 ? "s" : ""} found
+              </span>
+            )}
+          </div>
           <textarea
             id="vercel-json"
             value={vercelJson}
             onChange={(e) => setVercelJson(e.target.value)}
             placeholder='{"crons": [{"path": "/api/cron/example", "schedule": "0 * * * *"}]}'
-            className="h-48 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-zinc-500 dark:focus:ring-zinc-500"
+            className={`h-48 w-full rounded-md border bg-white px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-1 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 ${
+              vercelJson && !jsonValidation.isValid
+                ? "border-red-300 focus:border-red-500 focus:ring-red-500 dark:border-red-700"
+                : "border-zinc-300 focus:border-zinc-900 focus:ring-zinc-900 dark:border-zinc-700 dark:focus:border-zinc-500 dark:focus:ring-zinc-500"
+            }`}
             required
           />
+          {vercelJson && jsonValidation.error && (
+            <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+              {jsonValidation.error}
+            </p>
+          )}
         </div>
 
         <div>
@@ -467,55 +340,10 @@ export const config = {
             </div>
           )}
 
-          <Dialog open={isCorsDialogOpen} onOpenChange={setIsCorsDialogOpen}>
-            <DialogContent className="sm:max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>CORS Setup for Localhost Testing</DialogTitle>
-                <DialogDescription>
-                  Create a{" "}
-                  <code className="rounded bg-zinc-100 px-1 py-0.5 dark:bg-zinc-800">
-                    middleware.ts
-                  </code>{" "}
-                  file in your app&apos;s root directory
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4 w-full min-w-0">
-                <div className="w-full overflow-hidden rounded-md border border-zinc-800 bg-zinc-900">
-                  <div className="flex items-center justify-between border-b border-zinc-800 bg-zinc-950/50 px-2 pt-2">
-                    <div className="flex items-center gap-2 rounded-t-md border-x border-t border-zinc-800 bg-zinc-900 px-3 py-2 text-xs font-medium text-zinc-200">
-                      <FileCode className="h-3.5 w-3.5 text-zinc-400" />
-                      middleware.ts
-                    </div>
-                    <div className="px-2 pb-2 text-xs font-medium text-zinc-500">
-                      Next.js
-                    </div>
-                  </div>
-                  <pre className="w-full max-h-[400px] overflow-x-auto overflow-y-auto p-4 text-xs text-zinc-100 whitespace-pre">
-                    <code>{corsSnippet}</code>
-                  </pre>
-                </div>
-                <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                  Safe: CORS only active in development (disabled in production)
-                </p>
-              </div>
-              <DialogFooter>
-                <button
-                  type="button"
-                  onClick={() => setIsCorsDialogOpen(false)}
-                  className="rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-800"
-                >
-                  Close
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCopy}
-                  className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
-                >
-                  {copied ? "Copied!" : "Copy to Clipboard"}
-                </button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <CorsSetupDialog
+            isOpen={isCorsDialogOpen}
+            onOpenChange={setIsCorsDialogOpen}
+          />
         </div>
 
         <div>

@@ -1,6 +1,5 @@
 import type { SavedConfig } from '../types';
-
-const STORAGE_KEY = 'previewcron_saved_configs';
+import { STORAGE_KEY } from '../constants';
 
 export function getSavedConfigs(): SavedConfig[] {
   if (typeof window === 'undefined') return [];

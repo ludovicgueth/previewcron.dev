@@ -1,44 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
-
-// Private IP ranges to block (SSRF protection)
-const PRIVATE_IP_RANGES = [
-  /^127\./, // 127.0.0.0/8 (localhost)
-  /^10\./, // 10.0.0.0/8 (private)
-  /^172\.(1[6-9]|2[0-9]|3[0-1])\./, // 172.16.0.0/12 (private)
-  /^192\.168\./, // 192.168.0.0/16 (private)
-  /^169\.254\./, // 169.254.0.0/16 (link-local)
-  /^::1$/, // IPv6 localhost
-  /^fc00:/, // IPv6 private
-  /^fe80:/, // IPv6 link-local
-];
+import {
+  RATE_LIMIT,
+  REQUEST_TIMEOUT_MS,
+  MAX_RESPONSE_LENGTH,
+  PRIVATE_IP_PATTERNS,
+  IPV4_PATTERN,
+} from "../../constants";
+import { validateServerHeaders } from "../../utils/headerParser";
 
 // Rate limiting (in-memory)
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
-const RATE_LIMIT = 10; // requests per window
-const RATE_LIMIT_WINDOW = 60000; // 1 minute
 
 function cleanupRateLimitMap() {
   const now = Date.now();
-  let cleaned = 0;
 
   for (const [ip, record] of rateLimitMap.entries()) {
     if (now > record.resetTime) {
       rateLimitMap.delete(ip);
-      cleaned++;
     }
   }
 
   // Prevent map from growing too large (safety check)
-  if (rateLimitMap.size > 10000) {
-    // If map is huge, clear all expired entries more aggressively
+  if (rateLimitMap.size > RATE_LIMIT.maxMapSize) {
     const entries = Array.from(rateLimitMap.entries());
     rateLimitMap.clear();
     // Re-add only non-expired entries
-    entries.forEach(([ip, record]) => {
+    for (const [ip, record] of entries) {
       if (now <= record.resetTime) {
         rateLimitMap.set(ip, record);
       }
-    });
+    }
   }
 }
 
@@ -53,11 +44,11 @@ function checkRateLimit(ip: string): boolean {
   const record = rateLimitMap.get(ip);
 
   if (!record || now > record.resetTime) {
-    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT.windowMs });
     return true;
   }
 
-  if (record.count >= RATE_LIMIT) {
+  if (record.count >= RATE_LIMIT.maxRequests) {
     return false;
   }
 
@@ -87,13 +78,12 @@ function isValidUrl(urlString: string): boolean {
     }
 
     // Block all IP addresses (IPv4)
-    const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
-    if (ipv4Regex.test(hostname)) {
-      return false; // Block all IP addresses, not just private ones
+    if (IPV4_PATTERN.test(hostname)) {
+      return false;
     }
 
     // Block private IP ranges (catches edge cases)
-    for (const range of PRIVATE_IP_RANGES) {
+    for (const range of PRIVATE_IP_PATTERNS) {
       if (range.test(hostname)) {
         return false;
       }
@@ -103,45 +93,6 @@ function isValidUrl(urlString: string): boolean {
   } catch {
     return false;
   }
-}
-
-function validateHeaders(
-  headers: Record<string, string>
-): Record<string, string> {
-  const blockedHeaders = [
-    "host",
-    "connection",
-    "content-length",
-    "transfer-encoding",
-    "upgrade",
-    "proxy-",
-    "sec-",
-  ];
-
-  const validated: Record<string, string> = {};
-
-  for (const [key, value] of Object.entries(headers)) {
-    const lowerKey = key.toLowerCase();
-
-    // Block sensitive headers
-    if (blockedHeaders.some((blocked) => lowerKey.startsWith(blocked))) {
-      continue;
-    }
-
-    // Validate header name (alphanumeric, hyphens, underscores)
-    if (!/^[a-z0-9_-]+$/i.test(key)) {
-      continue;
-    }
-
-    // Limit header value length
-    if (value.length > 1000) {
-      continue;
-    }
-
-    validated[key] = value;
-  }
-
-  return validated;
 }
 
 export async function POST(request: NextRequest) {
@@ -187,12 +138,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate and sanitize headers
-    const validatedHeaders = headers ? validateHeaders(headers) : {};
+    // Validate and sanitize headers using shared utility
+    const validatedHeaders = headers ? validateServerHeaders(headers) : {};
 
-    // Set timeout (30 seconds)
+    // Set timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
     try {
       const response = await fetch(url, {
@@ -209,7 +160,7 @@ export async function POST(request: NextRequest) {
       let message = "";
       try {
         const data = await response.text();
-        message = data.substring(0, 1000);
+        message = data.substring(0, MAX_RESPONSE_LENGTH);
       } catch {
         message = `Response received with status ${statusCode}`;
       }
@@ -226,7 +177,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           {
             success: false,
-            message: "Request timeout (30s)",
+            message: `Request timeout (${REQUEST_TIMEOUT_MS / 1000}s)`,
             statusCode: 408,
           },
           { status: 408 }

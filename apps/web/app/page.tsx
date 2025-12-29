@@ -5,6 +5,8 @@ import type { VercelConfig, CronJobWithStatus, CronPanelConfig } from "./types";
 import { CronJobsList } from "./components/CronJobsList";
 import { ConfigForm } from "./components/ConfigForm";
 import { AboutPanel } from "./components/AboutPanel";
+import { parseAndValidateClientHeaders } from "./utils/headerParser";
+import { MAX_RESPONSE_LENGTH } from "./constants";
 
 export default function Home() {
   const [config, setConfig] = useState<CronPanelConfig>({
@@ -35,7 +37,7 @@ export default function Home() {
         const jobs: CronJobWithStatus[] = parsed.crons.map((cron, index) => ({
           ...cron,
           id: `${cron.path}-${index}`,
-          status: "idle" as const,
+          status: "idle",
         }));
 
         setCronJobs(jobs);
@@ -62,9 +64,7 @@ export default function Home() {
 
     setCronJobs((prev) =>
       prev.map((job) =>
-        job.id === cronId
-          ? { ...job, status: "loading" as const, startTime }
-          : job
+        job.id === cronId ? { ...job, status: "loading", startTime } : job
       )
     );
 
@@ -79,40 +79,22 @@ export default function Home() {
       let data;
       let statusCode;
 
+      // Build headers using shared utility
+      const customHeaders = config.customHeaders
+        ? parseAndValidateClientHeaders(config.customHeaders)
+        : {};
+
+      // Add deploy protection token if present
+      if (config.deployProtectionToken) {
+        customHeaders["x-vercel-protection-bypass"] =
+          config.deployProtectionToken;
+      }
+
       if (isLocalhost) {
         // Direct fetch for localhost (browser can access it)
-        const headers: HeadersInit = {};
-        if (config.deployProtectionToken) {
-          headers["x-vercel-protection-bypass"] = config.deployProtectionToken;
-        }
-
-        // Parse custom headers with validation
-        if (config.customHeaders) {
-          const lines = config.customHeaders.split("\n");
-          lines.forEach((line) => {
-            const colonIndex = line.indexOf(":");
-            if (colonIndex > 0) {
-              const key = line.substring(0, colonIndex).trim();
-              const value = line.substring(colonIndex + 1).trim();
-              // Validate header name
-              if (key && value && /^[a-z0-9_-]+$/i.test(key)) {
-                const lowerKey = key.toLowerCase();
-                // Block sensitive headers
-                if (
-                  !["host", "connection", "content-length"].some((blocked) =>
-                    lowerKey.startsWith(blocked)
-                  )
-                ) {
-                  headers[key] = value;
-                }
-              }
-            }
-          });
-        }
-
         const response = await fetch(url, {
           method: "GET",
-          headers,
+          headers: customHeaders,
           signal: controller.signal,
         });
 
@@ -123,47 +105,18 @@ export default function Home() {
         data = {
           success: isSuccess,
           message: isSuccess
-            ? `Success: ${responseText.substring(0, 1000)}`
-            : `Error: ${responseText.substring(0, 1000)}`,
+            ? `Success: ${responseText.substring(0, MAX_RESPONSE_LENGTH)}`
+            : `Error: ${responseText.substring(0, MAX_RESPONSE_LENGTH)}`,
           statusCode,
         };
       } else {
         // Use API proxy for external URLs (to avoid CORS)
-        const headers: HeadersInit = {};
-        if (config.deployProtectionToken) {
-          headers["x-vercel-protection-bypass"] = config.deployProtectionToken;
-        }
-
-        // Parse custom headers with validation
-        if (config.customHeaders) {
-          const lines = config.customHeaders.split("\n");
-          lines.forEach((line) => {
-            const colonIndex = line.indexOf(":");
-            if (colonIndex > 0) {
-              const key = line.substring(0, colonIndex).trim();
-              const value = line.substring(colonIndex + 1).trim();
-              // Validate header name
-              if (key && value && /^[a-z0-9_-]+$/i.test(key)) {
-                const lowerKey = key.toLowerCase();
-                // Block sensitive headers
-                if (
-                  !["host", "connection", "content-length"].some((blocked) =>
-                    lowerKey.startsWith(blocked)
-                  )
-                ) {
-                  headers[key] = value;
-                }
-              }
-            }
-          });
-        }
-
         const response = await fetch("/api/trigger-cron", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ url, headers }),
+          body: JSON.stringify({ url, headers: customHeaders }),
           signal: controller.signal,
         });
 
