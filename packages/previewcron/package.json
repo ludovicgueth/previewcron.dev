@@ -1,0 +1,58 @@
+{
+  "name": "previewcron",
+  "version": "0.1.0",
+  "description": "Test Vercel cron jobs locally with a simple UI",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.js"
+    },
+    "./page": {
+      "types": "./dist/page-export.d.mts",
+      "import": "./dist/page-export.js"
+    },
+    "./client": {
+      "types": "./dist/client.d.mts",
+      "import": "./dist/client.js"
+    },
+    "./server": {
+      "types": "./dist/server/index.d.mts",
+      "import": "./dist/server/index.js"
+    },
+    "./styles.css": "./dist/previewcron.css"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build:css": "cp ./src/styles/previewcron.css ./dist/previewcron.css",
+    "build:js": "tsup",
+    "build": "bun run build:js && bun run build:css",
+    "prepublishOnly": "bun run build",
+    "lint": "echo \"No lint configured\"",
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": [
+    "vercel",
+    "cron",
+    "testing",
+    "nextjs",
+    "development"
+  ],
+  "author": "Ludovic Gueth",
+  "license": "MIT",
+  "peerDependencies": {
+    "next": ">=14.0.0",
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "tsup": "^8.0.0",
+    "typescript": "^5"
+  }
+}

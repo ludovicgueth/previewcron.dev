@@ -1,0 +1,18 @@
+# Source files (only publish dist/)
+src/
+tsup.config.ts
+tsconfig.json
+
+# Development files
+node_modules/
+*.log
+.turbo/
+
+# Testing
+*.test.ts
+*.test.tsx
+__tests__/
+
+# Documentation (keep README.md)
+*.md
+!README.md

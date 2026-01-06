@@ -1,0 +1,618 @@
+/* =================================================================
+   PreviewCron - Vanilla CSS
+   A zero-dependency stylesheet for the PreviewCron components
+   Matches the previewcron.dev theme
+   ================================================================= */
+
+/* CSS Custom Properties (Theming) */
+.previewcron-root {
+  /* Colors - Light Mode (oklch) */
+  --pc-background: oklch(0.99 0 0);
+  --pc-foreground: oklch(0 0 0);
+  --pc-card: oklch(1 0 0);
+  --pc-card-foreground: oklch(0 0 0);
+  --pc-muted: oklch(0.97 0 0);
+  --pc-muted-foreground: oklch(0.44 0 0);
+  --pc-secondary: oklch(0.94 0 0);
+  --pc-secondary-foreground: oklch(0 0 0);
+  --pc-border: oklch(0.92 0 0);
+  --pc-input: oklch(0.94 0 0);
+  --pc-ring: oklch(0 0 0);
+  --pc-destructive: oklch(0.63 0.19 23.03);
+  --pc-destructive-foreground: oklch(1 0 0);
+
+  /* Status Colors */
+  --pc-success: oklch(0.72 0.19 142);
+  --pc-success-bg: oklch(0.95 0.05 142);
+  --pc-success-border: oklch(0.85 0.12 142);
+  --pc-success-text: oklch(0.45 0.15 142);
+
+  --pc-error: oklch(0.63 0.19 23.03);
+  --pc-error-bg: oklch(0.95 0.03 23);
+  --pc-error-border: oklch(0.85 0.10 23);
+  --pc-error-text: oklch(0.50 0.18 23);
+
+  --pc-loading: oklch(0.62 0.19 250);
+  --pc-loading-bg: oklch(0.95 0.03 250);
+  --pc-loading-text: oklch(0.50 0.18 250);
+
+  /* Typography - JetBrains Mono */
+  --pc-font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+  /* Spacing */
+  --pc-spacing: 0.2rem;
+  --pc-space-1: calc(var(--pc-spacing) * 1.25);
+  --pc-space-2: calc(var(--pc-spacing) * 2.5);
+  --pc-space-3: calc(var(--pc-spacing) * 3.75);
+  --pc-space-4: calc(var(--pc-spacing) * 5);
+  --pc-space-6: calc(var(--pc-spacing) * 7.5);
+  --pc-space-8: calc(var(--pc-spacing) * 10);
+
+  /* Borders - Very small radius */
+  --pc-radius: 0.1rem;
+
+  /* Shadows */
+  --pc-shadow-sm: 0px 1px 2px 0px hsl(0 0% 0% / 0.10), 0px 1px 2px -1px hsl(0 0% 0% / 0.10);
+  --pc-shadow-md: 0px 1px 2px 0px hsl(0 0% 0% / 0.10), 0px 2px 4px -1px hsl(0 0% 0% / 0.10);
+
+  /* Base styles */
+  font-family: var(--pc-font-mono);
+  color: var(--pc-foreground);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Dark Mode - System Preference */
+@media (prefers-color-scheme: dark) {
+  .previewcron-root {
+    --pc-background: oklch(0 0 0);
+    --pc-foreground: oklch(1 0 0);
+    --pc-card: oklch(0.14 0 0);
+    --pc-card-foreground: oklch(1 0 0);
+    --pc-muted: oklch(0.23 0 0);
+    --pc-muted-foreground: oklch(0.72 0 0);
+    --pc-secondary: oklch(0.25 0 0);
+    --pc-secondary-foreground: oklch(1 0 0);
+    --pc-border: oklch(0.26 0 0);
+    --pc-input: oklch(0.32 0 0);
+    --pc-ring: oklch(0.72 0 0);
+    --pc-destructive: oklch(0.69 0.20 23.91);
+    --pc-destructive-foreground: oklch(0 0 0);
+
+    /* Dark status colors */
+    --pc-success-bg: oklch(0.25 0.08 142);
+    --pc-success-border: oklch(0.35 0.12 142);
+    --pc-success-text: oklch(0.75 0.15 142);
+
+    --pc-error-bg: oklch(0.25 0.06 23);
+    --pc-error-border: oklch(0.35 0.10 23);
+    --pc-error-text: oklch(0.75 0.15 23);
+
+    --pc-loading-bg: oklch(0.25 0.06 250);
+    --pc-loading-text: oklch(0.75 0.15 250);
+  }
+}
+
+/* =================================================================
+   Dashboard Component
+   ================================================================= */
+
+.pc-dashboard {
+  min-height: 100vh;
+  background-color: var(--pc-background);
+  padding: var(--pc-space-6);
+}
+
+.pc-dashboard__content {
+  max-width: 56rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.pc-dashboard__header {
+  margin-bottom: var(--pc-space-8);
+}
+
+.pc-dashboard__header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--pc-space-4);
+}
+
+.pc-dashboard__title {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: var(--pc-foreground);
+  margin: 0;
+  line-height: 1.2;
+  font-family: var(--pc-font-mono);
+}
+
+.pc-dashboard__subtitle {
+  margin-top: var(--pc-space-2);
+  color: var(--pc-muted-foreground);
+  margin-bottom: 0;
+  font-family: var(--pc-font-mono);
+}
+
+.pc-dashboard__link {
+  color: var(--pc-foreground);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: opacity 0.15s ease;
+}
+
+.pc-dashboard__link:hover {
+  opacity: 0.7;
+}
+
+.pc-dashboard__github {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pc-space-2);
+  padding: var(--pc-space-2) var(--pc-space-4);
+  border-radius: var(--pc-radius);
+  border: 1px solid var(--pc-border);
+  background-color: var(--pc-card);
+  color: var(--pc-foreground);
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: var(--pc-font-mono);
+  text-decoration: none;
+  transition: background-color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.pc-dashboard__github:hover {
+  background-color: var(--pc-secondary);
+}
+
+.pc-dashboard__github-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.pc-dashboard__github-text {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .pc-dashboard__github-text {
+    display: inline;
+  }
+}
+
+.pc-dashboard__code {
+  background-color: var(--pc-muted);
+  padding: 0.125rem 0.375rem;
+  border-radius: var(--pc-radius);
+  font-size: 0.875rem;
+  font-family: var(--pc-font-mono);
+}
+
+/* Empty State */
+.pc-dashboard__empty {
+  display: flex;
+  height: 24rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--pc-radius);
+  border: 1px dashed var(--pc-border);
+  background-color: var(--pc-card);
+}
+
+.pc-dashboard__empty-content {
+  text-align: center;
+}
+
+.pc-dashboard__empty-title {
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: var(--pc-foreground);
+  margin: 0;
+  font-family: var(--pc-font-mono);
+}
+
+.pc-dashboard__empty-text {
+  margin-top: var(--pc-space-2);
+  font-size: 0.875rem;
+  color: var(--pc-muted-foreground);
+  margin-bottom: 0;
+  font-family: var(--pc-font-mono);
+}
+
+/* =================================================================
+   Two-Column Layout
+   ================================================================= */
+
+.pc-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--pc-space-6);
+}
+
+@media (min-width: 1024px) {
+  .pc-layout {
+    grid-template-columns: 1fr 2fr;
+  }
+}
+
+.pc-layout__left {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pc-space-6);
+}
+
+.pc-layout__right {
+  min-width: 0;
+}
+
+/* =================================================================
+   Auth Card (Configuration Panel)
+   ================================================================= */
+
+.pc-auth-card {
+  border-radius: var(--pc-radius);
+  border: 1px solid var(--pc-border);
+  background-color: var(--pc-card);
+  padding: var(--pc-space-6);
+  box-shadow: var(--pc-shadow-sm);
+}
+
+.pc-auth-card__title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--pc-foreground);
+  margin: 0 0 var(--pc-space-4) 0;
+  font-family: var(--pc-font-mono);
+}
+
+/* =================================================================
+   Authorization Input
+   ================================================================= */
+
+.pc-auth {
+  /* No margin needed, card handles spacing */
+}
+
+.pc-auth__label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--pc-muted-foreground);
+  margin-bottom: var(--pc-space-2);
+  font-family: var(--pc-font-mono);
+}
+
+.pc-auth__input {
+  width: 100%;
+  padding: var(--pc-space-2) var(--pc-space-3);
+  border-radius: var(--pc-radius);
+  border: 1px solid var(--pc-border);
+  background-color: var(--pc-card);
+  color: var(--pc-foreground);
+  font-size: 0.875rem;
+  font-family: var(--pc-font-mono);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  box-sizing: border-box;
+}
+
+.pc-auth__input::placeholder {
+  color: var(--pc-muted-foreground);
+}
+
+.pc-auth__input:focus {
+  outline: none;
+  border-color: var(--pc-ring);
+  box-shadow: 0 0 0 2px var(--pc-ring);
+}
+
+/* =================================================================
+   Jobs List Component
+   ================================================================= */
+
+.pc-jobs-list {
+  border-radius: var(--pc-radius);
+  border: 1px solid var(--pc-border);
+  background-color: var(--pc-card);
+  box-shadow: var(--pc-shadow-sm);
+}
+
+.pc-jobs-list__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--pc-space-6);
+  border-bottom: 1px solid var(--pc-border);
+}
+
+.pc-jobs-list__header-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.pc-jobs-list__title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--pc-foreground);
+  margin: 0;
+  font-family: var(--pc-font-mono);
+}
+
+.pc-jobs-list__subtitle {
+  margin-top: var(--pc-space-1);
+  font-size: 0.875rem;
+  color: var(--pc-muted-foreground);
+  margin-bottom: 0;
+  font-family: var(--pc-font-mono);
+}
+
+.pc-jobs-list__count {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  background-color: var(--pc-secondary);
+  padding: 0.25rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--pc-secondary-foreground);
+  font-family: var(--pc-font-mono);
+}
+
+.pc-jobs-list__content {
+  padding: var(--pc-space-4);
+}
+
+.pc-jobs-list__note {
+  margin-bottom: var(--pc-space-4);
+  font-size: 0.875rem;
+  color: var(--pc-muted-foreground);
+  font-family: var(--pc-font-mono);
+}
+
+.pc-jobs-list__items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pc-space-3);
+}
+
+/* =================================================================
+   Job Item Component
+   ================================================================= */
+
+.pc-job-item {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  border-radius: var(--pc-radius);
+  border: 1px solid var(--pc-border);
+  background-color: var(--pc-card);
+  padding: var(--pc-space-4);
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.pc-job-item:hover {
+  box-shadow: var(--pc-shadow-md);
+}
+
+@media (prefers-color-scheme: dark) {
+  .pc-job-item:hover {
+    border-color: var(--pc-muted-foreground);
+  }
+}
+
+.pc-job-item__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.pc-job-item__path-row {
+  display: flex;
+  align-items: center;
+  gap: var(--pc-space-2);
+}
+
+.pc-job-item__path {
+  font-family: var(--pc-font-mono);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--pc-foreground);
+}
+
+/* Status Indicator */
+.pc-job-item__status {
+  display: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+}
+
+.pc-job-item[data-status="success"] .pc-job-item__status {
+  display: flex;
+  background-color: var(--pc-success);
+}
+
+.pc-job-item[data-status="error"] .pc-job-item__status {
+  display: flex;
+  background-color: var(--pc-error);
+}
+
+.pc-job-item[data-status="loading"] .pc-job-item__status {
+  display: flex;
+  background-color: var(--pc-loading);
+  animation: pc-pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Schedule Row */
+.pc-job-item__schedule-row {
+  display: flex;
+  align-items: center;
+  gap: var(--pc-space-2);
+  margin-top: var(--pc-space-2);
+  font-size: 0.875rem;
+  color: var(--pc-muted-foreground);
+  font-family: var(--pc-font-mono);
+}
+
+.pc-job-item__schedule {
+  display: inline-block;
+  background-color: var(--pc-secondary);
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--pc-radius);
+  font-family: var(--pc-font-mono);
+  font-size: 0.75rem;
+}
+
+.pc-job-item__separator {
+  color: var(--pc-muted-foreground);
+}
+
+.pc-job-item__description {
+  color: var(--pc-muted-foreground);
+  font-family: var(--pc-font-mono);
+}
+
+/* Meta Row (Last run, duration, status code) */
+.pc-job-item__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--pc-space-2);
+  margin-top: var(--pc-space-2);
+  font-size: 0.75rem;
+  color: var(--pc-muted-foreground);
+  font-family: var(--pc-font-mono);
+}
+
+.pc-job-item__duration {
+  display: inline-block;
+  padding: 0.125rem 0.375rem;
+  border-radius: var(--pc-radius);
+  font-family: var(--pc-font-mono);
+  background-color: var(--pc-secondary);
+  color: var(--pc-secondary-foreground);
+}
+
+.pc-job-item[data-status="loading"] .pc-job-item__duration {
+  background-color: var(--pc-loading-bg);
+  color: var(--pc-loading-text);
+}
+
+.pc-job-item__status-code {
+  display: inline-block;
+  padding: 0.125rem 0.375rem;
+  border-radius: var(--pc-radius);
+  font-family: var(--pc-font-mono);
+}
+
+.pc-job-item__status-code[data-success="true"] {
+  background-color: var(--pc-success-bg);
+  color: var(--pc-success-text);
+}
+
+.pc-job-item__status-code[data-success="false"] {
+  background-color: var(--pc-error-bg);
+  color: var(--pc-error-text);
+}
+
+/* Response Box */
+.pc-job-item__response {
+  margin-top: var(--pc-space-3);
+  max-height: 12rem;
+  max-width: 42rem;
+  overflow: auto;
+  border-radius: var(--pc-radius);
+  border: 1px solid;
+  padding: var(--pc-space-3);
+  font-size: 0.75rem;
+  font-family: var(--pc-font-mono);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.pc-job-item__response[data-status="success"] {
+  border-color: var(--pc-success-border);
+  background-color: var(--pc-success-bg);
+  color: var(--pc-success-text);
+}
+
+.pc-job-item__response[data-status="error"] {
+  border-color: var(--pc-error-border);
+  background-color: var(--pc-error-bg);
+  color: var(--pc-error-text);
+}
+
+/* Run Button */
+.pc-job-item__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--pc-space-2);
+  height: 2.5rem;
+  flex-shrink: 0;
+  margin-left: var(--pc-space-4);
+  padding-left: var(--pc-space-4);
+  padding-right: var(--pc-space-4);
+  border-radius: var(--pc-radius);
+  border: 1px solid var(--pc-border);
+  background-color: var(--pc-card);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--pc-foreground);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  font-family: var(--pc-font-mono);
+}
+
+.pc-job-item__button:hover:not(:disabled) {
+  background-color: var(--pc-secondary);
+}
+
+.pc-job-item__button:focus {
+  outline: 2px solid var(--pc-ring);
+  outline-offset: 2px;
+}
+
+.pc-job-item__button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Spinner */
+.pc-job-item__spinner {
+  width: 1rem;
+  height: 1rem;
+  animation: pc-spin 1s linear infinite;
+}
+
+.pc-job-item__spinner-track {
+  opacity: 0.25;
+}
+
+.pc-job-item__spinner-head {
+  opacity: 0.75;
+}
+
+/* =================================================================
+   Animations
+   ================================================================= */
+
+@keyframes pc-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pc-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
