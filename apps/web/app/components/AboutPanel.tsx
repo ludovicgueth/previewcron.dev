@@ -15,10 +15,21 @@ export function AboutPanel() {
         </p>
         <ul className="ml-4 list-disc space-y-1">
           <li>Test cron endpoints on preview deployments</li>
-          <li>Debug cron jobs in local development</li>
           <li>Manually trigger scheduled tasks for testing</li>
           <li>Monitor execution time and response status</li>
         </ul>
+        <p className="pt-1 text-xs text-zinc-500 dark:text-zinc-500">
+          For localhost testing, use the{" "}
+          <a
+            href="https://www.npmjs.com/package/previewcron"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-zinc-700 underline hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"
+          >
+            npm package
+          </a>
+          .
+        </p>
         <p className="pt-2 text-xs text-zinc-500 dark:text-zinc-500">
           Perfect for developers working with Vercel cron jobs who need to test
           before deploying to production.

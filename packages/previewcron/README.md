@@ -64,7 +64,7 @@ export { default } from "previewcron/page";
   "crons": [
     {
       "path": "/api/cron/cleanup",
-      "schedule": "0 0 0 0 0"
+      "schedule": "0 0 * * *"
     }
   ]
 }
