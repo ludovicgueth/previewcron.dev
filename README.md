@@ -4,84 +4,47 @@ Test and trigger Vercel cron jobs on preview deployments and local environments.
 
 **Why?** Vercel only runs cron jobs in production. This tool lets you test them easily.
 
-## Usage
+## Two Ways to Test
 
-1. Paste your `vercel.json` content
-2. Enter your preview URL (or use localhost:3000)
-3. Click "Run" to trigger any cron job
+### 1. Preview Deployments → [previewcron.dev](https://previewcron.dev)
 
-## Testing Localhost from previewcron.dev
+Use the web app to test cron jobs on **Vercel preview URLs**:
 
-**Important:** To test your localhost API endpoints from previewcron.dev, you need to enable CORS in your app.
+1. Go to [previewcron.dev](https://previewcron.dev)
+2. Paste your `vercel.json` content
+3. Enter your preview URL (e.g., `https://my-app-abc123.vercel.app`)
+4. Click "Run" to trigger any cron job
 
-**Use middleware.ts** (recommended) - This is the reliable way to enable CORS for API routes. `next.config.ts` headers() doesn't work reliably for API routes in Next.js.
+### 2. Local Development → npm package
 
-Create a `middleware.ts` file in your app's root directory:
+For testing on **localhost**, install the npm package:
 
-```typescript
-// middleware.ts
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-
-export function middleware(request: NextRequest) {
-  // Only enable CORS in development (disabled in production)
-  if (process.env.NODE_ENV !== "development") {
-    return NextResponse.next();
-  }
-
-  const origin = request.headers.get("origin");
-  const allowedOrigin = "https://previewcron.dev";
-
-  // Handle CORS preflight (OPTIONS request)
-  if (request.method === "OPTIONS") {
-    if (origin === allowedOrigin) {
-      return new NextResponse(null, {
-        status: 204,
-        headers: {
-          "Access-Control-Allow-Origin": allowedOrigin,
-          "Access-Control-Allow-Methods": "GET, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type, Authorization",
-          "Access-Control-Max-Age": "86400",
-        },
-      });
-    }
-    return new NextResponse(null, { status: 204 });
-  }
-
-  // Handle actual request (GET, etc.)
-  const response = NextResponse.next();
-  if (origin === allowedOrigin) {
-    response.headers.set("Access-Control-Allow-Origin", allowedOrigin);
-    response.headers.set("Access-Control-Allow-Methods", "GET, OPTIONS");
-    response.headers.set(
-      "Access-Control-Allow-Headers",
-      "Content-Type, Authorization"
-    );
-  }
-
-  return response;
-}
-
-export const config = {
-  matcher: "/api/cron/:path*",
-};
+```bash
+npm install previewcron --save-dev
 ```
 
-**Why middleware instead of `next.config.ts`?**
+Then create a page in your Next.js app:
 
-- `next.config.ts` headers() doesn't work reliably for API routes in Next.js
-- Middleware has access to the request object, allowing dynamic origin checking
-- Middleware properly handles OPTIONS preflight requests
+```tsx
+// app/dev/cron/page.tsx
+import "previewcron/styles.css";
+export { default } from "previewcron/page";
+```
 
-**This is safe** - CORS headers are automatically removed in production.
+Visit `http://localhost:3000/dev/cron` to test your cron jobs locally.
 
-Alternatively, run Preview Cron locally (`npm run dev`) to avoid CORS entirely.
+See the [SDK documentation](./packages/previewcron/README.md) for more options.
+
+## Why Two Methods?
+
+- **previewcron.dev** cannot reach `localhost` due to browser security policies
+- The **npm package** runs inside your app, so it can call your local endpoints directly
 
 ## Development
 
 ```bash
-npm install
-npm run dev
+bun install
+bun run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000)

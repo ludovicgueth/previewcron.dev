@@ -7,7 +7,6 @@ import { CONFIG_DEBOUNCE_MS } from "../constants";
 import {
   SaveConfigDialog,
   DeleteConfigDialog,
-  CorsSetupDialog,
 } from "./dialogs";
 
 interface ConfigFormProps {
@@ -91,7 +90,6 @@ export function ConfigForm({ onSubmit, error }: ConfigFormProps) {
   const [savedConfigs, setSavedConfigs] = useState<SavedConfig[]>([]);
   const [selectedConfigName, setSelectedConfigName] = useState<string>("");
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isCorsDialogOpen, setIsCorsDialogOpen] = useState(false);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Real-time JSON validation
@@ -282,21 +280,11 @@ export function ConfigForm({ onSubmit, error }: ConfigFormProps) {
             className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-zinc-500 dark:focus:ring-zinc-500"
             required
           />
-          {!previewUrl.includes("localhost:3000") && (
-            <button
-              type="button"
-              onClick={() => setPreviewUrl("http://localhost:3000")}
-              className="mt-2 inline-flex items-center rounded-md border border-zinc-300 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-            >
-              Use localhost:3000
-            </button>
-          )}
-
           {isLocalhost && (
-            <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3 dark:border-amber-900/50 dark:bg-amber-900/20">
+            <div className="mt-3 rounded-md border border-blue-200 bg-blue-50 p-3 dark:border-blue-900/50 dark:bg-blue-900/20">
               <div className="flex items-start gap-2">
                 <svg
-                  className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-500"
+                  className="h-5 w-5 shrink-0 text-blue-600 dark:text-blue-400"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -305,45 +293,36 @@ export function ConfigForm({ onSubmit, error }: ConfigFormProps) {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-amber-900 dark:text-amber-200">
-                    Testing localhost from deployed app
+                  <p className="text-sm font-medium text-blue-900 dark:text-blue-200">
+                    For localhost testing, use the npm package
                   </p>
-                  <p className="mt-1 text-xs text-amber-800 dark:text-amber-300">
-                    You&apos;ll need to add CORS headers to your local app.
+                  <p className="mt-1 text-xs text-blue-800 dark:text-blue-300">
+                    This web app cannot reach localhost due to browser security.
+                    Install the SDK to test locally.
                   </p>
-                  <button
-                    type="button"
-                    onClick={() => setIsCorsDialogOpen(true)}
-                    className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-amber-300 bg-amber-100 px-2.5 py-1.5 text-xs font-medium text-amber-900 transition-colors hover:bg-amber-200 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-200 dark:hover:bg-amber-900/50"
+                  <a
+                    href="https://www.npmjs.com/package/previewcron"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-blue-300 bg-blue-100 px-2.5 py-1.5 text-xs font-medium text-blue-900 transition-colors hover:bg-blue-200 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-200 dark:hover:bg-blue-900/50"
                   >
                     <svg
                       className="h-3.5 w-3.5"
-                      fill="none"
-                      stroke="currentColor"
                       viewBox="0 0 24 24"
+                      fill="currentColor"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
-                      />
+                      <path d="M0 0v24h24V0H0zm13.2 18H11V9.6H8.4V7.2h7.2v2.4h-2.4V18z" />
                     </svg>
-                    Show setup
-                  </button>
+                    npm install previewcron
+                  </a>
                 </div>
               </div>
             </div>
           )}
-
-          <CorsSetupDialog
-            isOpen={isCorsDialogOpen}
-            onOpenChange={setIsCorsDialogOpen}
-          />
         </div>
 
         <div>
