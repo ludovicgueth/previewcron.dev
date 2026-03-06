@@ -363,6 +363,8 @@
 
 .pc-jobs-list__content {
   padding: var(--pc-space-4);
+  max-height: 70vh;
+  overflow-y: auto;
 }
 
 .pc-jobs-list__note {
