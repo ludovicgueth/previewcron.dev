@@ -1,7 +1,7 @@
 {
   "name": "previewcron",
-  "version": "0.1.0",
-  "description": "Test Vercel cron jobs locally with a simple UI",
+  "version": "0.2.0",
+  "description": "Trigger & test your Vercel cron jobs locally or on preview deployments",
   "repository": {
     "type": "git",
     "url": "https://github.com/ludovicgueth/previewcron.dev"
@@ -30,6 +30,12 @@
       "import": "./dist/server/index.js"
     },
     "./styles.css": "./dist/previewcron.css"
+  },
+  "bin": {
+    "previewcron": "./dist/cli/index.mjs"
+  },
+  "engines": {
+    "node": ">=18"
   },
   "files": [
     "dist"

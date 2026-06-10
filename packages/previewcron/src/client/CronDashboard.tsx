@@ -136,15 +136,7 @@ export function CronDashboard({ crons, baseUrl }: CronDashboardProps) {
                 <div>
                   <h1 className="pc-dashboard__title">Preview Cron</h1>
                   <p className="pc-dashboard__subtitle">
-                    Local development cron testing via{" "}
-                    <a
-                      href="https://www.npmjs.com/package/previewcron"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="pc-dashboard__link"
-                    >
-                      previewcron
-                    </a>
+                    Trigger &amp; test your Vercel cron jobs locally or on preview deployments
                   </p>
                 </div>
                 <a
@@ -190,15 +182,7 @@ export function CronDashboard({ crons, baseUrl }: CronDashboardProps) {
               <div>
                 <h1 className="pc-dashboard__title">Preview Cron</h1>
                 <p className="pc-dashboard__subtitle">
-                  Local development cron testing via{" "}
-                  <a
-                    href="https://www.npmjs.com/package/previewcron"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="pc-dashboard__link"
-                  >
-                    previewcron
-                  </a>
+                  Trigger &amp; test your Vercel cron jobs locally or on preview deployments
                 </p>
               </div>
               <a

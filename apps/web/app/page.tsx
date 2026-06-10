@@ -205,7 +205,7 @@ export default function Home() {
               Preview Cron
             </h1>
             <p className="mt-2 text-zinc-600 dark:text-zinc-400">
-              Test Vercel cron jobs on preview and local environments
+              Trigger & test your Vercel cron jobs locally or on preview deployments
             </p>
           </div>
           <a

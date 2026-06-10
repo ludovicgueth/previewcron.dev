@@ -1,6 +1,6 @@
 # PreviewCron SDK
 
-Test Vercel cron jobs locally in your Next.js development environment with a simple UI.
+Trigger & test your Vercel cron jobs locally or on preview deployments — with a simple UI.
 
 ## Features
 
@@ -12,6 +12,42 @@ Test Vercel cron jobs locally in your Next.js development environment with a sim
 - Zero configuration for basic usage
 - Vanilla CSS (no Tailwind required)
 - TypeScript support
+
+## Quick start (no install)
+
+The fastest way — run it in your project, no setup, no files to add:
+
+```bash
+npx previewcron
+```
+
+It reads `vercel.json` from the current directory, opens a dashboard in your
+browser, and lets you trigger each cron job against your local dev server. If a
+`CRON_SECRET` is set (env or `.env.local`), the `Authorization` header is
+pre-filled automatically.
+
+Because the dashboard runs locally, it can hit `localhost` directly (no CORS, no
+SSRF restrictions like the hosted previewcron.dev).
+
+```bash
+npx previewcron [options]
+
+  -p, --port <number>     Port for the dashboard (default: 4747)
+  -b, --base-url <url>    Target app base URL (default: http://localhost:3000)
+      --vercel-json <p>   Path to vercel.json (default: ./vercel.json)
+      --no-open           Do not open the browser automatically
+  -v, --version           Print version
+  -h, --help              Show this help
+```
+
+Example — your dev server runs on port 4000:
+
+```bash
+npx previewcron --base-url http://localhost:4000
+```
+
+> Prefer an in-app dashboard route instead? Install the package and follow the
+> SDK setup below.
 
 ## Installation
 
