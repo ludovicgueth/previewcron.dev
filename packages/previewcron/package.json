@@ -1,6 +1,6 @@
 {
   "name": "previewcron",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Trigger & test your Vercel cron jobs locally or on preview deployments",
   "repository": {
     "type": "git",
