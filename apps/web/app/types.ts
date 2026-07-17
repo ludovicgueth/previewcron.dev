@@ -20,14 +20,15 @@ export interface CronJobWithStatus extends VercelCron {
 
 export interface CronPanelConfig {
   previewUrl: string;
-  deployProtectionToken?: string;
-  customHeaders?: string;
+  authHeader?: string;
+  bypassToken?: string;
 }
 
-export interface SavedConfig {
+export interface SavedProject {
   name: string;
   vercelJson: string;
   previewUrl: string;
-  deployProtectionToken?: string;
-  customHeaders?: string;
+  authHeader?: string;
+  bypassToken?: string;
+  updatedAt: number;
 }

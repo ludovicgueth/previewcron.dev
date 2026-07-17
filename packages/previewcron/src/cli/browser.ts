@@ -6,7 +6,7 @@
  * Triggers run through the CLI's local proxy (`POST /api/trigger`) to avoid
  * cross-origin issues when the dashboard (e.g. :4747) hits the app (e.g. :3000).
  */
-import { parseCronSchedule } from "../shared/cronParser";
+import { parseCronSchedule } from "../cronParser";
 
 type Status = "idle" | "loading" | "success" | "error";
 
@@ -26,8 +26,7 @@ interface InitialData {
   crons: { path: string; schedule: string }[];
   baseUrl: string;
   authHeader: string;
-  source: "file" | "inline";
-  filePath?: string;
+  bypassToken: string;
 }
 
 interface TriggerResult {
@@ -70,7 +69,8 @@ const jobs: Job[] = data.crons.map((cron, index) => ({
 // Live duration timers keyed by job id.
 const timers = new Map<string, ReturnType<typeof setInterval>>();
 
-let authHeader = data.authHeader || "";
+let authHeader = data.authHeader;
+let bypassToken = data.bypassToken;
 
 function headerHtml(): string {
   return `
@@ -161,6 +161,10 @@ function dashboardHtml(): string {
             <label for="pc-auth-input" class="pc-auth__label">Authorization (optional)</label>
             <input type="text" id="pc-auth-input" class="pc-auth__input" placeholder="Bearer YOUR_TOKEN" value="${escapeHtml(authHeader)}" />
           </div>
+          <div class="pc-auth">
+            <label for="pc-bypass-input" class="pc-auth__label">Vercel bypass token (optional)</label>
+            <input type="text" id="pc-bypass-input" class="pc-auth__input" placeholder="x-vercel-protection-bypass" value="${escapeHtml(bypassToken)}" />
+          </div>
           <p class="pc-auth__hint">Target: <code>${escapeHtml(data.baseUrl)}</code></p>
         </div>
       </div>
@@ -221,7 +225,7 @@ async function runJob(job: Job): Promise<void> {
     const res = await fetch("/api/trigger", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ path: job.path, authHeader }),
+      body: JSON.stringify({ path: job.path, authHeader, bypassToken }),
     });
     const result: TriggerResult = await res.json();
 
@@ -260,6 +264,13 @@ function mount(): void {
   if (authInput) {
     authInput.addEventListener("input", () => {
       authHeader = authInput.value;
+    });
+  }
+
+  const bypassInput = document.getElementById("pc-bypass-input") as HTMLInputElement | null;
+  if (bypassInput) {
+    bypassInput.addEventListener("input", () => {
+      bypassToken = bypassInput.value;
     });
   }
 

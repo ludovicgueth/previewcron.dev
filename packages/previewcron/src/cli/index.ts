@@ -14,8 +14,8 @@ import { readFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { spawn } from "child_process";
-import { readVercelJson } from "../server/readVercelJson";
-import type { VercelCron } from "../shared/types";
+import { readVercelJson } from "../readVercelJson";
+import type { VercelCron } from "../types";
 
 const DEFAULT_PORT = 4747;
 const DEFAULT_BASE_URL = "http://localhost:3000";
@@ -99,19 +99,19 @@ function parseArgs(argv: string[]): CliOptions | "help" | "version" {
 }
 
 /**
- * Resolve CRON_SECRET so the Authorization header can be pre-filled.
+ * Resolve a secret so the dashboard fields can be pre-filled.
  * Checks the environment first, then .env.local and .env in the cwd.
  */
-async function resolveCronSecret(): Promise<string | undefined> {
-  const fromEnv = process.env.CRON_SECRET?.trim();
+async function resolveSecret(name: string): Promise<string | undefined> {
+  const fromEnv = process.env[name]?.trim();
   if (fromEnv) return fromEnv;
 
   for (const file of [".env.local", ".env"]) {
     try {
       const content = await readFile(join(process.cwd(), file), "utf-8");
       // Use [ \t]* (not \s*) so the match never crosses a newline — otherwise
-      // an empty `CRON_SECRET=` would greedily capture the next line's value.
-      const match = content.match(/^[ \t]*CRON_SECRET[ \t]*=[ \t]*(.*)$/m);
+      // an empty `NAME=` would greedily capture the next line's value.
+      const match = content.match(new RegExp(`^[ \\t]*${name}[ \\t]*=[ \\t]*(.*)$`, "m"));
       if (match) {
         const value = match[1].trim().replace(/^["']|["']$/g, "").trim();
         if (value) return value;
@@ -170,6 +170,7 @@ async function handleTrigger(
     const parsed = JSON.parse(await readBody(req)) as {
       path?: string;
       authHeader?: string;
+      bypassToken?: string;
     };
     if (!parsed.path || typeof parsed.path !== "string") {
       sendJson(res, 400, { ok: false, error: "Missing 'path'", durationMs: 0 });
@@ -180,6 +181,9 @@ async function handleTrigger(
     const headers: Record<string, string> = {};
     if (parsed.authHeader && parsed.authHeader.trim()) {
       headers["Authorization"] = parsed.authHeader.trim();
+    }
+    if (parsed.bypassToken && parsed.bypassToken.trim()) {
+      headers["x-vercel-protection-bypass"] = parsed.bypassToken.trim();
     }
 
     const controller = new AbortController();
@@ -250,7 +254,7 @@ function listen(server: ReturnType<typeof createServer>, port: number): Promise<
       }
     };
     server.once("error", onError);
-    // Bind to loopback only: the dashboard embeds CRON_SECRET and exposes a
+    // Bind to loopback only: the dashboard embeds secrets and exposes a
     // trigger proxy — it must never be reachable from the local network.
     server.listen(port, "127.0.0.1", () => {
       server.removeListener("error", onError);
@@ -293,16 +297,16 @@ async function main(): Promise<void> {
 
   const { port, baseUrl, vercelJsonPath, open } = options;
 
-  const result = await readVercelJson({ path: vercelJsonPath, baseUrl });
+  const result = await readVercelJson(vercelJsonPath);
   const crons: VercelCron[] = result.crons;
-  const cronSecret = await resolveCronSecret();
+  const cronSecret = await resolveSecret("CRON_SECRET");
+  const bypassToken = await resolveSecret("VERCEL_AUTOMATION_BYPASS_SECRET");
 
   const initial = {
     crons,
     baseUrl,
     authHeader: cronSecret ? `Bearer ${cronSecret}` : "",
-    source: result.source,
-    filePath: result.filePath,
+    bypassToken: bypassToken ?? "",
   };
 
   const here = dirname(fileURLToPath(import.meta.url));
@@ -338,12 +342,11 @@ async function main(): Promise<void> {
   const dashboardUrl = `http://localhost:${actualPort}`;
 
   console.log(`\n  ▲ Preview Cron\n`);
-  if (result.source === "file" && result.filePath) {
-    console.log(`  vercel.json   ${result.filePath}`);
-  }
+  console.log(`  vercel.json   ${result.filePath}`);
   console.log(`  cron jobs     ${crons.length} found`);
   console.log(`  target        ${baseUrl}`);
   if (cronSecret) console.log(`  auth          CRON_SECRET detected, pre-filled`);
+  if (bypassToken) console.log(`  bypass        VERCEL_AUTOMATION_BYPASS_SECRET detected, pre-filled`);
   console.log(`\n  ➜ Dashboard:  ${dashboardUrl}\n`);
   console.log(`  Press Ctrl+C to stop.\n`);
 

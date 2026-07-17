@@ -3,10 +3,10 @@ import {
   RATE_LIMIT,
   REQUEST_TIMEOUT_MS,
   MAX_RESPONSE_LENGTH,
+  MAX_HEADER_VALUE_LENGTH,
   PRIVATE_IP_PATTERNS,
   IPV4_PATTERN,
 } from "../../constants";
-import { validateServerHeaders } from "../../utils/headerParser";
 
 // Rate limiting (in-memory)
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
@@ -95,6 +95,16 @@ function isValidUrl(urlString: string): boolean {
   }
 }
 
+/** Returns the trimmed value if it is a usable header value, undefined otherwise. */
+function sanitizeHeaderValue(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.length > MAX_HEADER_VALUE_LENGTH) return undefined;
+  // Header values must not contain CR/LF (header injection)
+  if (/[\r\n]/.test(trimmed)) return undefined;
+  return trimmed;
+}
+
 export async function POST(request: NextRequest) {
   // Rate limiting - extract first IP from x-forwarded-for (handles multiple IPs)
   const forwardedFor = request.headers.get("x-forwarded-for");
@@ -116,8 +126,8 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const body = await request.json();
-    const { url, headers } = body;
+    const body: Record<string, unknown> = await request.json();
+    const { url, authHeader, bypassToken } = body;
 
     if (!url || typeof url !== "string") {
       return NextResponse.json(
@@ -138,8 +148,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate and sanitize headers using shared utility
-    const validatedHeaders = headers ? validateServerHeaders(headers) : {};
+    // Only two headers are ever forwarded, built server-side. Arbitrary
+    // custom headers were dropped on purpose in 0.3: Authorization is
+    // Vercel's own cron auth pattern, and a fixed allow-list removes the
+    // header-injection surface entirely.
+    const headers: Record<string, string> = {};
+    const auth = sanitizeHeaderValue(authHeader);
+    if (auth) headers["Authorization"] = auth;
+    const bypass = sanitizeHeaderValue(bypassToken);
+    if (bypass) headers["x-vercel-protection-bypass"] = bypass;
 
     // Set timeout
     const controller = new AbortController();
@@ -148,7 +165,7 @@ export async function POST(request: NextRequest) {
     try {
       const response = await fetch(url, {
         method: "GET",
-        headers: validatedHeaders,
+        headers,
         signal: controller.signal,
       });
 

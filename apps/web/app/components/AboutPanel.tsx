@@ -19,25 +19,25 @@ export function AboutPanel() {
           <li>Monitor execution time and response status</li>
         </ul>
         <p className="pt-1 text-xs text-zinc-500 dark:text-zinc-500">
-          For localhost testing, use the{" "}
+          For localhost testing, run{" "}
           <a
             href="https://www.npmjs.com/package/previewcron"
             target="_blank"
             rel="noopener noreferrer"
             className="text-zinc-700 underline hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"
           >
-            npm package
-          </a>
-          .
+            <code>npx previewcron</code>
+          </a>{" "}
+          in your project — no install needed.
         </p>
         <p className="pt-2 text-xs text-zinc-500 dark:text-zinc-500">
-          Perfect for developers working with Vercel cron jobs who need to test
-          before deploying to production.
+          Your configuration (URL, tokens) is saved automatically in your
+          browser, per project.
         </p>
         <p className="border-t border-zinc-200 pt-3 text-xs font-medium text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
-          Privacy: All data remains in your browser. We do not store, collect,
-          or transmit any configuration data, URLs, tokens, or API responses to
-          any server.
+          Privacy: Your configuration and tokens are stored only in your
+          browser. Trigger requests are relayed through our proxy to reach your
+          preview URL — nothing is stored or logged server-side.
         </p>
         <p className="pt-2 text-xs italic text-zinc-500 dark:text-zinc-500">
           This is an independent tool and is not affiliated with, endorsed by,

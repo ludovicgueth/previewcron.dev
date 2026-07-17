@@ -137,17 +137,6 @@
   font-family: var(--pc-font-mono);
 }
 
-.pc-dashboard__link {
-  color: var(--pc-foreground);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  transition: opacity 0.15s ease;
-}
-
-.pc-dashboard__link:hover {
-  opacity: 0.7;
-}
-
 .pc-dashboard__github {
   display: inline-flex;
   align-items: center;
@@ -182,14 +171,6 @@
   .pc-dashboard__github-text {
     display: inline;
   }
-}
-
-.pc-dashboard__code {
-  background-color: var(--pc-muted);
-  padding: 0.125rem 0.375rem;
-  border-radius: var(--pc-radius);
-  font-size: 0.875rem;
-  font-family: var(--pc-font-mono);
 }
 
 /* Empty State */

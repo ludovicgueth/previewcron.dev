@@ -1,6 +1,6 @@
 {
   "name": "previewcron",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Trigger & test your Vercel cron jobs locally or on preview deployments",
   "repository": {
     "type": "git",
@@ -9,27 +9,6 @@
   "homepage": "https://previewcron.dev",
   "bugs": {
     "url": "https://github.com/ludovicgueth/previewcron.dev/issues"
-  },
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.mts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.mts",
-      "import": "./dist/index.js"
-    },
-    "./page": {
-      "types": "./dist/page-export.d.mts",
-      "import": "./dist/page-export.js"
-    },
-    "./client": {
-      "types": "./dist/client.d.mts",
-      "import": "./dist/client.js"
-    },
-    "./server": {
-      "types": "./dist/server/index.d.mts",
-      "import": "./dist/server/index.js"
-    },
-    "./styles.css": "./dist/previewcron.css"
   },
   "bin": {
     "previewcron": "./dist/cli/index.mjs"
@@ -57,15 +36,8 @@
   ],
   "author": "Ludovic Gueth",
   "license": "MIT",
-  "peerDependencies": {
-    "next": ">=14.0.0",
-    "react": ">=18.0.0",
-    "react-dom": ">=18.0.0"
-  },
   "devDependencies": {
     "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
     "tsup": "^8.0.0",
     "typescript": "^5"
   }

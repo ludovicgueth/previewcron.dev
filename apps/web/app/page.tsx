@@ -5,14 +5,12 @@ import type { VercelConfig, CronJobWithStatus, CronPanelConfig } from "./types";
 import { CronJobsList } from "./components/CronJobsList";
 import { ConfigForm } from "./components/ConfigForm";
 import { AboutPanel } from "./components/AboutPanel";
-import { parseAndValidateClientHeaders } from "./utils/headerParser";
-import { MAX_RESPONSE_LENGTH } from "./constants";
 
 export default function Home() {
   const [config, setConfig] = useState<CronPanelConfig>({
     previewUrl: "",
-    deployProtectionToken: "",
-    customHeaders: "",
+    authHeader: "",
+    bypassToken: "",
   });
   const [cronJobs, setCronJobs] = useState<CronJobWithStatus[]>([]);
   const [error, setError] = useState<string>("");
@@ -22,8 +20,8 @@ export default function Home() {
     (
       vercelJson: string,
       previewUrl: string,
-      token?: string,
-      customHeaders?: string
+      authHeader?: string,
+      bypassToken?: string
     ) => {
       try {
         const parsed: VercelConfig = JSON.parse(vercelJson);
@@ -41,7 +39,7 @@ export default function Home() {
         }));
 
         setCronJobs(jobs);
-        setConfig({ previewUrl, deployProtectionToken: token, customHeaders });
+        setConfig({ previewUrl, authHeader, bypassToken });
         setError("");
       } catch {
         setError("Invalid JSON format. Please check your vercel.json");
@@ -50,6 +48,12 @@ export default function Home() {
     },
     []
   );
+
+  const handleConfigReset = useCallback(() => {
+    setCronJobs([]);
+    setConfig({ previewUrl: "", authHeader: "", bypassToken: "" });
+    setError("");
+  }, []);
 
   const handleRunCron = async (cronId: string) => {
     // Cancel previous request if any
@@ -73,67 +77,38 @@ export default function Home() {
 
     try {
       const url = `${config.previewUrl}${job.path}`;
-      const isLocalhost =
-        url.includes("localhost") || url.includes("127.0.0.1");
 
-      let data;
-      let statusCode;
+      // Always go through the API proxy — the browser cannot fetch preview
+      // URLs directly (CORS), and localhost is the CLI's job.
+      const response = await fetch("/api/trigger-cron", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          url,
+          authHeader: config.authHeader,
+          bypassToken: config.bypassToken,
+        }),
+        signal: controller.signal,
+      });
 
-      // Build headers using shared utility
-      const customHeaders = config.customHeaders
-        ? parseAndValidateClientHeaders(config.customHeaders)
-        : {};
+      // The proxy returns its {success, message, statusCode} envelope on every
+      // path (400 blocked URL, 408 timeout, 429 rate limit…) — parse it even
+      // when !response.ok so the user sees the real message.
+      const data: {
+        success?: boolean;
+        message?: string;
+        statusCode?: number;
+      } = await response.json().catch(() => {
+        throw new Error(`API request failed: ${response.status}`);
+      });
 
-      // Add deploy protection token if present
-      if (config.deployProtectionToken) {
-        customHeaders["x-vercel-protection-bypass"] =
-          config.deployProtectionToken;
+      if (!data || typeof data !== "object") {
+        throw new Error("Invalid response format from API");
       }
 
-      if (isLocalhost) {
-        // Direct fetch for localhost (browser can access it)
-        const response = await fetch(url, {
-          method: "GET",
-          headers: customHeaders,
-          signal: controller.signal,
-        });
-
-        statusCode = response.status;
-        const isSuccess = statusCode >= 200 && statusCode < 300;
-        const responseText = await response.text();
-
-        data = {
-          success: isSuccess,
-          message: isSuccess
-            ? `Success: ${responseText.substring(0, MAX_RESPONSE_LENGTH)}`
-            : `Error: ${responseText.substring(0, MAX_RESPONSE_LENGTH)}`,
-          statusCode,
-        };
-      } else {
-        // Use API proxy for external URLs (to avoid CORS)
-        const response = await fetch("/api/trigger-cron", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ url, headers: customHeaders }),
-          signal: controller.signal,
-        });
-
-        if (!response.ok) {
-          throw new Error(`API request failed: ${response.status}`);
-        }
-
-        const responseData = await response.json();
-
-        // Handle non-JSON or unexpected response format
-        if (!responseData || typeof responseData !== "object") {
-          throw new Error("Invalid response format from API");
-        }
-
-        data = responseData;
-        statusCode = data.statusCode;
-      }
+      const statusCode = data.statusCode;
 
       // Check if request was aborted
       if (controller.signal.aborted) {
@@ -230,7 +205,11 @@ export default function Home() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
           <div className="lg:col-span-4">
             <div className="space-y-6">
-              <ConfigForm onSubmit={handleConfigSubmit} error={error} />
+              <ConfigForm
+                onSubmit={handleConfigSubmit}
+                onReset={handleConfigReset}
+                error={error}
+              />
               <AboutPanel />
             </div>
           </div>
