@@ -22,10 +22,12 @@
   --pc-destructive-foreground: oklch(1 0 0);
 
   /* Status Colors */
-  --pc-success: oklch(0.72 0.19 142);
-  --pc-success-bg: oklch(0.95 0.05 142);
-  --pc-success-border: oklch(0.85 0.12 142);
-  --pc-success-text: oklch(0.45 0.15 142);
+  /* Success is deliberately neutral — the product theme is monochrome zinc,
+     only errors get a color. */
+  --pc-success: oklch(0 0 0);
+  --pc-success-bg: oklch(0.97 0 0);
+  --pc-success-border: oklch(0.92 0 0);
+  --pc-success-text: oklch(0.30 0 0);
 
   --pc-error: oklch(0.63 0.19 23.03);
   --pc-error-bg: oklch(0.95 0.03 23);
@@ -81,9 +83,10 @@
     --pc-destructive-foreground: oklch(0 0 0);
 
     /* Dark status colors */
-    --pc-success-bg: oklch(0.25 0.08 142);
-    --pc-success-border: oklch(0.35 0.12 142);
-    --pc-success-text: oklch(0.75 0.15 142);
+    --pc-success: oklch(1 0 0);
+    --pc-success-bg: oklch(0.23 0 0);
+    --pc-success-border: oklch(0.30 0 0);
+    --pc-success-text: oklch(0.85 0 0);
 
     --pc-error-bg: oklch(0.25 0.06 23);
     --pc-error-border: oklch(0.35 0.10 23);

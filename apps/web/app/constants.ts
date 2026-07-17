@@ -1,9 +1,5 @@
 // Application constants - centralized configuration values
 
-// Local Storage
-export const STORAGE_KEY = "previewcron_projects";
-export const LEGACY_STORAGE_KEY = "previewcron_saved_configs";
-
 // Rate Limiting
 export const RATE_LIMIT = {
   maxRequests: 10,

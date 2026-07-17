@@ -38,29 +38,13 @@ export async function GET() {
               marginBottom: "30px",
             }}
           >
-            <svg
-              width="80"
-              height="80"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <rect width="24" height="24" rx="4" fill="#18181b" />
-              <path
-                d="M8 12L11 15L16 9"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <circle
-                cx="12"
-                cy="12"
-                r="9"
-                stroke="#18181b"
-                strokeWidth="1.5"
-              />
-            </svg>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgdmlld0JveD0iMCAwIDUxMiA1MTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImJnIiB4MT0iMCIgeTE9IjAiIHgyPSI1MTIiIHkyPSI1MTIiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjMjcyNzJhIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjMTMxMzE1Ii8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KPHJlY3QgeD0iMCIgeT0iMCIgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiIHJ4PSIxMTIiIGZpbGw9InVybCgjYmcpIi8+CjxyZWN0IHg9IjYiIHk9IjYiIHdpZHRoPSI1MDAiIGhlaWdodD0iNTAwIiByeD0iMTA2IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS1vcGFjaXR5PSIwLjA3IiBzdHJva2Utd2lkdGg9IjIiLz4KCjxjaXJjbGUgY3g9IjI1NiIgY3k9IjI1NiIgcj0iMTUwIiBmaWxsPSJub25lIiBzdHJva2U9IiNmYWZhZmEiIHN0cm9rZS13aWR0aD0iMjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8cGF0aCBkPSJNIDIyMCAxNzggTCAyMjAgMzM0IEwgMzQ2IDI1NiBaIiBmaWxsPSIjZmFmYWZhIiBzdHJva2U9IiNmYWZhZmEiIHN0cm9rZS13aWR0aD0iMjAiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4="
+              width={96}
+              height={96}
+              alt=""
+            />
           </div>
           <div
             style={{
@@ -96,7 +80,7 @@ export async function GET() {
             }}
           >
             <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              ✓ Preview Deployments
+              Preview Deployments
             </span>
             <span
               style={{
@@ -107,7 +91,7 @@ export async function GET() {
                 borderLeft: "2px solid #e4e4e7",
               }}
             >
-              ✓ Local Testing
+              Local Testing
             </span>
           </div>
         </div>

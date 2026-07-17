@@ -36,7 +36,7 @@ export function CronJobItem({ job, onRunCron }: CronJobItemProps) {
             {job.path}
           </div>
           {job.status === "success" && (
-            <span className="flex h-2 w-2 rounded-full bg-green-500"></span>
+            <span className="flex h-2 w-2 rounded-full bg-zinc-900 dark:bg-zinc-100"></span>
           )}
           {job.status === "error" && (
             <span className="flex h-2 w-2 rounded-full bg-red-500"></span>
@@ -76,7 +76,7 @@ export function CronJobItem({ job, onRunCron }: CronJobItemProps) {
               <span
                 className={`rounded px-1.5 py-0.5 font-mono ${
                   job.statusCode >= 200 && job.statusCode < 300
-                    ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                    ? "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
                     : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
                 }`}
               >
@@ -89,7 +89,7 @@ export function CronJobItem({ job, onRunCron }: CronJobItemProps) {
           <div
             className={`mt-3 max-h-48 max-w-2xl overflow-auto rounded-md border p-3 text-xs font-mono whitespace-pre-wrap break-words ${
               job.status === "success"
-                ? "border-green-200 bg-green-50 text-green-800 dark:border-green-900/50 dark:bg-green-900/20 dark:text-green-400"
+                ? "border-zinc-200 bg-zinc-50 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-300"
                 : "border-red-200 bg-red-50 text-red-800 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-400"
             }`}
           >

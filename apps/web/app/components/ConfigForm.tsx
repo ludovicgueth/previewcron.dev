@@ -1,13 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
-import type { SavedProject } from "../types";
-import {
-  getProjects,
-  saveProject,
-  deleteProject,
-  deriveProjectName,
-} from "../utils/configStorage";
 import { CONFIG_DEBOUNCE_MS } from "../constants";
 
 interface ConfigFormProps {
@@ -17,7 +10,6 @@ interface ConfigFormProps {
     authHeader?: string,
     bypassToken?: string
   ) => void;
-  onReset: () => void;
   error: string;
 }
 
@@ -84,13 +76,81 @@ function validateVercelJson(json: string): JsonValidation {
   }
 }
 
-export function ConfigForm({ onSubmit, onReset, error }: ConfigFormProps) {
+function SecretInput({
+  id,
+  value,
+  onChange,
+  placeholder,
+}: {
+  id: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+}) {
+  const [visible, setVisible] = useState(false);
+
+  return (
+    <div className="relative">
+      <input
+        type={visible ? "text" : "password"}
+        id={id}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        autoComplete="off"
+        className="w-full rounded-md border border-zinc-300 bg-white py-2 pl-3 pr-10 text-sm text-zinc-900 placeholder-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-zinc-500 dark:focus:ring-zinc-500"
+      />
+      <button
+        type="button"
+        onClick={() => setVisible((v) => !v)}
+        aria-label={visible ? "Hide value" : "Show value"}
+        title={visible ? "Hide value" : "Show value"}
+        className="absolute inset-y-0 right-0 flex items-center px-3 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+      >
+        {visible ? (
+          <svg
+            className="h-4 w-4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+            />
+          </svg>
+        ) : (
+          <svg
+            className="h-4 w-4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+            />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+            />
+          </svg>
+        )}
+      </button>
+    </div>
+  );
+}
+
+export function ConfigForm({ onSubmit, error }: ConfigFormProps) {
   const [vercelJson, setVercelJson] = useState("");
   const [previewUrl, setPreviewUrl] = useState("");
   const [authHeader, setAuthHeader] = useState("");
   const [bypassToken, setBypassToken] = useState("");
-  const [projects, setProjects] = useState<SavedProject[]>([]);
-  const [selectedProject, setSelectedProject] = useState<string>("");
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Real-time JSON validation
@@ -99,30 +159,22 @@ export function ConfigForm({ onSubmit, onReset, error }: ConfigFormProps) {
     [vercelJson]
   );
 
-  // On mount: load saved projects and restore the most recently used one.
+  // Nothing is ever persisted — the form lives in memory for the tab's
+  // lifetime. On mount, clear storage left behind by previous versions that
+  // saved configs (the legacy format could contain tokens).
   useEffect(() => {
-    const saved = getProjects();
-    setProjects(saved);
-    if (saved.length > 0) {
-      loadProject(saved[0]);
+    try {
+      localStorage.removeItem("previewcron_projects");
+      localStorage.removeItem("previewcron_saved_configs");
+    } catch {
+      // Storage unavailable — nothing to clean.
     }
   }, []);
-
-  const loadProject = (project: SavedProject) => {
-    setSelectedProject(project.name);
-    setVercelJson(project.vercelJson);
-    setPreviewUrl(project.previewUrl);
-    setAuthHeader(project.authHeader || "");
-    setBypassToken(project.bypassToken || "");
-  };
 
   const isLocalhost =
     previewUrl.includes("localhost") || previewUrl.includes("127.0.0.1");
 
-  // Debounced auto-save + auto-submit whenever the form changes. Everything is
-  // persisted silently under a project name derived from the preview URL — no
-  // save button needed. Save and submit share one validity gate so a half-typed
-  // URL or a cleared textarea can never overwrite a good saved project.
+  // Debounced auto-submit whenever the form is complete and valid.
   useEffect(() => {
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
@@ -130,20 +182,6 @@ export function ConfigForm({ onSubmit, onReset, error }: ConfigFormProps) {
 
     debounceTimerRef.current = setTimeout(() => {
       if (!vercelJson || !previewUrl || !jsonValidation.isValid) return;
-
-      const name = deriveProjectName(previewUrl);
-      if (name) {
-        setProjects(
-          saveProject({
-            name,
-            vercelJson,
-            previewUrl,
-            authHeader: authHeader || undefined,
-            bypassToken: bypassToken || undefined,
-          })
-        );
-        setSelectedProject(name);
-      }
 
       onSubmit(
         vercelJson,
@@ -161,65 +199,12 @@ export function ConfigForm({ onSubmit, onReset, error }: ConfigFormProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vercelJson, previewUrl, authHeader, bypassToken, jsonValidation.isValid]);
 
-  const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const project = projects.find((p) => p.name === e.target.value);
-    if (project) loadProject(project);
-  };
-
-  const handleDeleteProject = () => {
-    if (!selectedProject) return;
-    setProjects(deleteProject(selectedProject));
-    // Clear the form too — otherwise the auto-save would immediately
-    // re-create the project from the still-filled fields.
-    loadProject({ name: "", vercelJson: "", previewUrl: "", updatedAt: 0 });
-    onReset();
-  };
-
   return (
     <div className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
       <div className="mb-4 flex items-center justify-between gap-4">
         <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">
           Configuration
         </h2>
-        {projects.length > 0 && (
-          <div className="flex items-center gap-2">
-            <select
-              value={selectedProject}
-              onChange={handleSelectChange}
-              aria-label="Saved projects"
-              className="max-w-44 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-900 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
-            >
-              {!selectedProject && <option value="">Projects…</option>}
-              {projects.map((project) => (
-                <option key={project.name} value={project.name}>
-                  {project.name}
-                </option>
-              ))}
-            </select>
-            {selectedProject && (
-              <button
-                type="button"
-                onClick={handleDeleteProject}
-                title={`Forget "${selectedProject}"`}
-                className="rounded-md border border-zinc-300 px-3 py-1.5 text-zinc-600 hover:border-red-300 hover:bg-red-50 hover:text-red-700 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-red-700 dark:hover:bg-red-900/20 dark:hover:text-red-400"
-              >
-                <svg
-                  className="h-4 w-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                  />
-                </svg>
-              </button>
-            )}
-          </div>
-        )}
       </div>
 
       <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
@@ -232,7 +217,7 @@ export function ConfigForm({ onSubmit, onReset, error }: ConfigFormProps) {
               vercel.json content
             </label>
             {jsonValidation.cronCount > 0 && (
-              <span className="text-xs text-green-600 dark:text-green-400">
+              <span className="text-xs text-zinc-500 dark:text-zinc-400">
                 {jsonValidation.cronCount} cron job
                 {jsonValidation.cronCount !== 1 ? "s" : ""} found
               </span>
@@ -315,13 +300,11 @@ export function ConfigForm({ onSubmit, onReset, error }: ConfigFormProps) {
           >
             Vercel bypass token (optional)
           </label>
-          <input
-            type="text"
+          <SecretInput
             id="bypass-token"
             value={bypassToken}
-            onChange={(e) => setBypassToken(e.target.value)}
+            onChange={setBypassToken}
             placeholder="Required if your preview has Deployment Protection"
-            className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-zinc-500 dark:focus:ring-zinc-500"
           />
           <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-500">
             Sent as <code>x-vercel-protection-bypass</code>. Vercel protects
@@ -337,19 +320,22 @@ export function ConfigForm({ onSubmit, onReset, error }: ConfigFormProps) {
           >
             Authorization header (optional)
           </label>
-          <input
-            type="text"
+          <SecretInput
             id="auth-header"
             value={authHeader}
-            onChange={(e) => setAuthHeader(e.target.value)}
+            onChange={setAuthHeader}
             placeholder="Bearer YOUR_CRON_SECRET"
-            className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-zinc-500 dark:focus:ring-zinc-500"
           />
           <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-500">
             For protected cron endpoints — same header Vercel sends in
             production (<code>Bearer $CRON_SECRET</code>).
           </p>
         </div>
+
+        <p className="text-xs text-zinc-500 dark:text-zinc-500">
+          Nothing is saved: your configuration and tokens stay in memory and
+          are gone when you close the tab.
+        </p>
 
         {error && (
           <div className="rounded-md bg-red-50 p-3 text-sm text-red-800 dark:bg-red-900/20 dark:text-red-400">

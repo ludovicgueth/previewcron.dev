@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Preview Cron - Test Vercel Cron Jobs on Preview & Local",
-  description: "Developer tool to test and trigger Vercel cron jobs on preview deployments and local environments. Debug and run scheduled tasks before production. Not affiliated with Vercel Inc.",
+  description: "Trigger and test Vercel cron jobs on preview deployments from your browser, or locally with the npx previewcron CLI. Nothing stored, nothing to install. Not affiliated with Vercel Inc.",
   metadataBase: new URL("https://previewcron.dev"),
   keywords: ["vercel", "cron", "cron jobs", "preview", "developer tools", "testing", "next.js"],
   authors: [{ name: "Ludovic Gueth" }],
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     url: "https://previewcron.dev",
     siteName: "Preview Cron",
     title: "Preview Cron - Test Vercel Cron Jobs on Preview & Local",
-    description: "Developer tool to test and trigger Vercel cron jobs on preview deployments and local environments. Debug and run scheduled tasks before production.",
+    description: "Trigger and test Vercel cron jobs on preview deployments from your browser, or locally with the npx previewcron CLI.",
     images: [
       {
         url: "/api/og",
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Preview Cron - Test Vercel Cron Jobs on Preview & Local",
-    description: "Developer tool to test and trigger Vercel cron jobs on preview deployments and local environments.",
+    description: "Trigger and test Vercel cron jobs on preview deployments from your browser, or locally with the npx previewcron CLI.",
     images: ["/api/og"],
   },
   robots: {
