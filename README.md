@@ -23,7 +23,8 @@ against your dev server. Works with any framework. See the
 3. Add your Vercel bypass token if the preview has Deployment Protection
 4. Click "Run" on any cron job
 
-Your config is saved automatically in your browser, per project.
+Nothing is stored: your configuration and tokens stay in your browser's
+memory and disappear when you close the tab.
 
 ## Why two ways?
 

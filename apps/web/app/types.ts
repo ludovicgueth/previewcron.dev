@@ -24,11 +24,3 @@ export interface CronPanelConfig {
   bypassToken?: string;
 }
 
-export interface SavedProject {
-  name: string;
-  vercelJson: string;
-  previewUrl: string;
-  authHeader?: string;
-  bypassToken?: string;
-  updatedAt: number;
-}

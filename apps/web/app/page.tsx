@@ -49,12 +49,6 @@ export default function Home() {
     []
   );
 
-  const handleConfigReset = useCallback(() => {
-    setCronJobs([]);
-    setConfig({ previewUrl: "", authHeader: "", bypassToken: "" });
-    setError("");
-  }, []);
-
   const handleRunCron = async (cronId: string) => {
     // Cancel previous request if any
     if (abortControllerRef.current) {
@@ -205,11 +199,7 @@ export default function Home() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
           <div className="lg:col-span-4">
             <div className="space-y-6">
-              <ConfigForm
-                onSubmit={handleConfigSubmit}
-                onReset={handleConfigReset}
-                error={error}
-              />
+              <ConfigForm onSubmit={handleConfigSubmit} error={error} />
               <AboutPanel />
             </div>
           </div>

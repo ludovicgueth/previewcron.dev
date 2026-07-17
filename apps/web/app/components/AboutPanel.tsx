@@ -30,14 +30,11 @@ export function AboutPanel() {
           </a>{" "}
           in your project — no install needed.
         </p>
-        <p className="pt-2 text-xs text-zinc-500 dark:text-zinc-500">
-          Your configuration (URL, tokens) is saved automatically in your
-          browser, per project.
-        </p>
         <p className="border-t border-zinc-200 pt-3 text-xs font-medium text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
-          Privacy: Your configuration and tokens are stored only in your
-          browser. Trigger requests are relayed through our proxy to reach your
-          preview URL — nothing is stored or logged server-side.
+          Privacy: Nothing is stored — your configuration and tokens live in
+          memory and disappear when you close the tab. Trigger requests are
+          relayed through our proxy to reach your preview URL, never stored or
+          logged server-side.
         </p>
         <p className="pt-2 text-xs italic text-zinc-500 dark:text-zinc-500">
           This is an independent tool and is not affiliated with, endorsed by,
