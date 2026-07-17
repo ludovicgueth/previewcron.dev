@@ -1,21 +1,23 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
-import type { SavedConfig } from "../types";
-import { getSavedConfigs } from "../utils/configStorage";
-import { CONFIG_DEBOUNCE_MS } from "../constants";
+import type { SavedProject } from "../types";
 import {
-  SaveConfigDialog,
-  DeleteConfigDialog,
-} from "./dialogs";
+  getProjects,
+  saveProject,
+  deleteProject,
+  deriveProjectName,
+} from "../utils/configStorage";
+import { CONFIG_DEBOUNCE_MS } from "../constants";
 
 interface ConfigFormProps {
   onSubmit: (
     vercelJson: string,
     previewUrl: string,
-    token?: string,
-    customHeaders?: string
+    authHeader?: string,
+    bypassToken?: string
   ) => void;
+  onReset: () => void;
   error: string;
 }
 
@@ -82,14 +84,13 @@ function validateVercelJson(json: string): JsonValidation {
   }
 }
 
-export function ConfigForm({ onSubmit, error }: ConfigFormProps) {
+export function ConfigForm({ onSubmit, onReset, error }: ConfigFormProps) {
   const [vercelJson, setVercelJson] = useState("");
   const [previewUrl, setPreviewUrl] = useState("");
-  const [token, setToken] = useState("");
-  const [customHeaders, setCustomHeaders] = useState("");
-  const [savedConfigs, setSavedConfigs] = useState<SavedConfig[]>([]);
-  const [selectedConfigName, setSelectedConfigName] = useState<string>("");
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [authHeader, setAuthHeader] = useState("");
+  const [bypassToken, setBypassToken] = useState("");
+  const [projects, setProjects] = useState<SavedProject[]>([]);
+  const [selectedProject, setSelectedProject] = useState<string>("");
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Real-time JSON validation
@@ -98,30 +99,59 @@ export function ConfigForm({ onSubmit, error }: ConfigFormProps) {
     [vercelJson]
   );
 
-  // Load saved configs only on client side
+  // On mount: load saved projects and restore the most recently used one.
   useEffect(() => {
-    setSavedConfigs(getSavedConfigs());
+    const saved = getProjects();
+    setProjects(saved);
+    if (saved.length > 0) {
+      loadProject(saved[0]);
+    }
   }, []);
+
+  const loadProject = (project: SavedProject) => {
+    setSelectedProject(project.name);
+    setVercelJson(project.vercelJson);
+    setPreviewUrl(project.previewUrl);
+    setAuthHeader(project.authHeader || "");
+    setBypassToken(project.bypassToken || "");
+  };
 
   const isLocalhost =
     previewUrl.includes("localhost") || previewUrl.includes("127.0.0.1");
 
-  // Debounced auto-submit when config changes
+  // Debounced auto-save + auto-submit whenever the form changes. Everything is
+  // persisted silently under a project name derived from the preview URL — no
+  // save button needed. Save and submit share one validity gate so a half-typed
+  // URL or a cleared textarea can never overwrite a good saved project.
   useEffect(() => {
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
 
-    if (vercelJson && previewUrl && jsonValidation.isValid) {
-      debounceTimerRef.current = setTimeout(() => {
-        onSubmit(
-          vercelJson,
-          previewUrl,
-          token || undefined,
-          customHeaders || undefined
+    debounceTimerRef.current = setTimeout(() => {
+      if (!vercelJson || !previewUrl || !jsonValidation.isValid) return;
+
+      const name = deriveProjectName(previewUrl);
+      if (name) {
+        setProjects(
+          saveProject({
+            name,
+            vercelJson,
+            previewUrl,
+            authHeader: authHeader || undefined,
+            bypassToken: bypassToken || undefined,
+          })
         );
-      }, CONFIG_DEBOUNCE_MS);
-    }
+        setSelectedProject(name);
+      }
+
+      onSubmit(
+        vercelJson,
+        previewUrl,
+        authHeader || undefined,
+        bypassToken || undefined
+      );
+    }, CONFIG_DEBOUNCE_MS);
 
     return () => {
       if (debounceTimerRef.current) {
@@ -129,35 +159,20 @@ export function ConfigForm({ onSubmit, error }: ConfigFormProps) {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vercelJson, previewUrl, token, customHeaders, jsonValidation.isValid]);
-
-  const handleLoadConfig = (configName: string) => {
-    if (!configName) return;
-    const config = savedConfigs.find((c) => c.name === configName);
-    if (config) {
-      setVercelJson(config.vercelJson);
-      setPreviewUrl(config.previewUrl);
-      setToken(config.deployProtectionToken || "");
-      setCustomHeaders(config.customHeaders || "");
-    }
-  };
+  }, [vercelJson, previewUrl, authHeader, bypassToken, jsonValidation.isValid]);
 
   const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const name = e.target.value;
-    setSelectedConfigName(name);
-    if (name) handleLoadConfig(name);
+    const project = projects.find((p) => p.name === e.target.value);
+    if (project) loadProject(project);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (jsonValidation.isValid) {
-      onSubmit(
-        vercelJson,
-        previewUrl,
-        token || undefined,
-        customHeaders || undefined
-      );
-    }
+  const handleDeleteProject = () => {
+    if (!selectedProject) return;
+    setProjects(deleteProject(selectedProject));
+    // Clear the form too — otherwise the auto-save would immediately
+    // re-create the project from the still-filled fields.
+    loadProject({ name: "", vercelJson: "", previewUrl: "", updatedAt: 0 });
+    onReset();
   };
 
   return (
@@ -166,70 +181,48 @@ export function ConfigForm({ onSubmit, error }: ConfigFormProps) {
         <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">
           Configuration
         </h2>
-        <div className="flex items-center gap-2">
-          {savedConfigs.length > 0 && (
-            <>
-              <select
-                value={selectedConfigName}
-                onChange={handleSelectChange}
-                className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-900 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+        {projects.length > 0 && (
+          <div className="flex items-center gap-2">
+            <select
+              value={selectedProject}
+              onChange={handleSelectChange}
+              aria-label="Saved projects"
+              className="max-w-44 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-900 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+            >
+              {!selectedProject && <option value="">Projects…</option>}
+              {projects.map((project) => (
+                <option key={project.name} value={project.name}>
+                  {project.name}
+                </option>
+              ))}
+            </select>
+            {selectedProject && (
+              <button
+                type="button"
+                onClick={handleDeleteProject}
+                title={`Forget "${selectedProject}"`}
+                className="rounded-md border border-zinc-300 px-3 py-1.5 text-zinc-600 hover:border-red-300 hover:bg-red-50 hover:text-red-700 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-red-700 dark:hover:bg-red-900/20 dark:hover:text-red-400"
               >
-                <option value="">Load saved...</option>
-                {savedConfigs.map((config) => (
-                  <option key={config.name} value={config.name}>
-                    {config.name}
-                  </option>
-                ))}
-              </select>
-              {selectedConfigName && (
-                <button
-                  type="button"
-                  onClick={() => setIsDeleteDialogOpen(true)}
-                  title="Delete selected configuration"
-                  className="rounded-md border border-zinc-300 px-3 py-1.5 text-zinc-600 hover:border-red-300 hover:bg-red-50 hover:text-red-700 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-red-700 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  <svg
-                    className="h-4 w-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                    />
-                  </svg>
-                </button>
-              )}
-            </>
-          )}
-
-          <SaveConfigDialog
-            previewUrl={previewUrl}
-            vercelJson={vercelJson}
-            token={token}
-            customHeaders={customHeaders}
-            onSave={(configs, savedName) => {
-              setSavedConfigs(configs);
-              setSelectedConfigName(savedName);
-            }}
-          />
-
-          <DeleteConfigDialog
-            isOpen={isDeleteDialogOpen}
-            onOpenChange={setIsDeleteDialogOpen}
-            configName={selectedConfigName}
-            onDelete={(configs) => {
-              setSavedConfigs(configs);
-              setSelectedConfigName("");
-            }}
-          />
-        </div>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  />
+                </svg>
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
         <div>
           <div className="mb-2 flex items-center justify-between">
             <label
@@ -298,27 +291,17 @@ export function ConfigForm({ onSubmit, error }: ConfigFormProps) {
                 </svg>
                 <div className="flex-1">
                   <p className="text-sm font-medium text-blue-900 dark:text-blue-200">
-                    For localhost testing, use the npm package
+                    For localhost, run{" "}
+                    <code className="rounded bg-blue-100 px-1 py-0.5 dark:bg-blue-900/40">
+                      npx previewcron
+                    </code>{" "}
+                    in your project
                   </p>
                   <p className="mt-1 text-xs text-blue-800 dark:text-blue-300">
-                    This web app cannot reach localhost due to browser security.
-                    Install the SDK to test locally.
+                    This web app cannot reach localhost due to browser
+                    security. The CLI reads your vercel.json automatically and
+                    opens the same dashboard locally — no install needed.
                   </p>
-                  <a
-                    href="https://www.npmjs.com/package/previewcron"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-blue-300 bg-blue-100 px-2.5 py-1.5 text-xs font-medium text-blue-900 transition-colors hover:bg-blue-200 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-200 dark:hover:bg-blue-900/50"
-                  >
-                    <svg
-                      className="h-3.5 w-3.5"
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
-                    >
-                      <path d="M0 0v24h24V0H0zm13.2 18H11V9.6H8.4V7.2h7.2v2.4h-2.4V18z" />
-                    </svg>
-                    npm install previewcron
-                  </a>
                 </div>
               </div>
             </div>
@@ -327,38 +310,45 @@ export function ConfigForm({ onSubmit, error }: ConfigFormProps) {
 
         <div>
           <label
-            htmlFor="token"
+            htmlFor="bypass-token"
             className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
           >
-            Deploy Protection Token (optional)
+            Vercel bypass token (optional)
           </label>
           <input
             type="text"
-            id="token"
-            value={token}
-            onChange={(e) => setToken(e.target.value)}
-            placeholder="Enter token if your preview has deploy protection"
+            id="bypass-token"
+            value={bypassToken}
+            onChange={(e) => setBypassToken(e.target.value)}
+            placeholder="Required if your preview has Deployment Protection"
             className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-zinc-500 dark:focus:ring-zinc-500"
           />
+          <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-500">
+            Sent as <code>x-vercel-protection-bypass</code>. Vercel protects
+            previews by default — find this token in your project&apos;s
+            Deployment Protection settings.
+          </p>
         </div>
 
         <div>
           <label
-            htmlFor="customHeaders"
+            htmlFor="auth-header"
             className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
           >
-            Custom Headers (optional)
+            Authorization header (optional)
           </label>
-          <textarea
-            id="customHeaders"
-            value={customHeaders}
-            onChange={(e) => setCustomHeaders(e.target.value)}
-            placeholder={
-              "Authorization: Bearer YOUR_SECRET\nx-cron-secret: secret123"
-            }
-            rows={3}
+          <input
+            type="text"
+            id="auth-header"
+            value={authHeader}
+            onChange={(e) => setAuthHeader(e.target.value)}
+            placeholder="Bearer YOUR_CRON_SECRET"
             className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-zinc-500 dark:focus:ring-zinc-500"
           />
+          <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-500">
+            For protected cron endpoints — same header Vercel sends in
+            production (<code>Bearer $CRON_SECRET</code>).
+          </p>
         </div>
 
         {error && (

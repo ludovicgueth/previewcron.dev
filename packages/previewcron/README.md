@@ -1,33 +1,33 @@
-# PreviewCron SDK
+# previewcron
 
-Trigger & test your Vercel cron jobs locally or on preview deployments — with a simple UI.
+Trigger & test your Vercel cron jobs from a simple dashboard. Vercel only runs
+cron jobs in production — this tool lets you test them anywhere.
 
-## Features
+## Usage
 
-- Auto-reads `vercel.json` from your project
-- Beautiful dashboard UI to test cron jobs
-- Real-time execution status and duration tracking
-- Authorization header support for protected endpoints
-- Development-only (automatically disabled in production)
-- Zero configuration for basic usage
-- Vanilla CSS (no Tailwind required)
-- TypeScript support
-
-## Quick start (no install)
-
-The fastest way — run it in your project, no setup, no files to add:
+Run it in your project — no install, no setup, no files to add:
 
 ```bash
 npx previewcron
 ```
 
 It reads `vercel.json` from the current directory, opens a dashboard in your
-browser, and lets you trigger each cron job against your local dev server. If a
-`CRON_SECRET` is set (env or `.env.local`), the `Authorization` header is
-pre-filled automatically.
+browser, and lets you trigger each cron job against your local dev server
+(default `http://localhost:3000`). Works with any framework that uses a
+`vercel.json` — Next.js, SvelteKit, Astro, Remix, Nuxt…
 
-Because the dashboard runs locally, it can hit `localhost` directly (no CORS, no
-SSRF restrictions like the hosted previewcron.dev).
+Secrets are picked up automatically from your environment, `.env.local`, or
+`.env`:
+
+- `CRON_SECRET` → pre-fills the `Authorization: Bearer …` header (the same
+  header Vercel sends in production)
+- `VERCEL_AUTOMATION_BYPASS_SECRET` → pre-fills the
+  `x-vercel-protection-bypass` header
+
+Because the dashboard runs locally, it can hit `localhost` directly — no CORS,
+no SSRF restrictions.
+
+## Options
 
 ```bash
 npx previewcron [options]
@@ -40,283 +40,38 @@ npx previewcron [options]
   -h, --help              Show this help
 ```
 
-Example — your dev server runs on port 4000:
+Your dev server runs on another port:
 
 ```bash
 npx previewcron --base-url http://localhost:4000
 ```
 
-> Prefer an in-app dashboard route instead? Install the package and follow the
-> SDK setup below.
-
-## Installation
-
-```bash
-npm install previewcron --save-dev
-# or
-bun add -d previewcron
-# or
-yarn add -D previewcron
-```
-
-## Quick Start
-
-### 1. Create a page for the dashboard
-
-You can place this anywhere in your Next.js app. Common locations:
-
-```tsx
-// app/dev/cron/page.tsx
-// OR app/admin/cron-test/page.tsx
-
-export { default } from "previewcron/page";
-```
-
-### 2. Import the styles
-
-Add the CSS import to your layout or page:
-
-```tsx
-// app/dev/cron/layout.tsx (recommended)
-import "previewcron/styles.css";
-
-export default function Layout({ children }: { children: React.ReactNode }) {
-  return children;
-}
-```
-
-Or import directly in your page:
-
-```tsx
-// app/dev/cron/page.tsx
-import "previewcron/styles.css";
-export { default } from "previewcron/page";
-```
-
-### 3. Make sure you have a `vercel.json` file
-
-```json
-{
-  "crons": [
-    {
-      "path": "/api/cron/cleanup",
-      "schedule": "0 0 * * *"
-    }
-  ]
-}
-```
-
-### 4. Start your dev server and visit the dashboard
+Target a preview deployment (the dashboard proxies requests locally, so any
+URL works — use the bypass token field if the preview has Deployment
+Protection):
 
 ```bash
-npm run dev
+npx previewcron --base-url https://my-app-abc123-team.vercel.app
 ```
 
-Then navigate to the route you created (e.g., `http://localhost:3000/dev/cron`)
+## Testing preview deployments without the CLI
 
-That's it! You'll see all your cron jobs listed and can test them with a single click.
-
-## Authorization Support
-
-The dashboard includes an optional Authorization header input. This is useful for testing cron endpoints that require authentication:
-
-1. Enter your authorization value in the "Authorization" field (e.g., `Bearer YOUR_SECRET_TOKEN`)
-2. Click "Run" on any cron job
-3. The Authorization header will be included in the request
-
-## Advanced Usage
-
-### Custom Base URL
-
-If your dev server runs on a different port:
-
-```tsx
-// app/dev/cron/page.tsx
-import CronDevPage from "previewcron/page";
-
-export default function Page() {
-  return <CronDevPage baseUrl="http://localhost:4000" />;
-}
-```
-
-### Custom vercel.json Path
-
-If your `vercel.json` is in a different location:
-
-```tsx
-import CronDevPage from "previewcron/page";
-
-export default function Page() {
-  return <CronDevPage vercelJsonPath="./config/vercel.json" />;
-}
-```
-
-### Inline Configuration
-
-Instead of reading from a file, you can pass the config directly:
-
-```tsx
-import CronDevPage from "previewcron/page";
-
-export default function Page() {
-  return (
-    <CronDevPage
-      config={{
-        crons: [
-          {
-            path: "/api/cron/test",
-            schedule: "* * * * *",
-          },
-        ],
-      }}
-    />
-  );
-}
-```
-
-### Using Individual Components
-
-For more control, you can use the individual components:
-
-```tsx
-"use client";
-
-import { CronDashboard } from "previewcron/client";
-import "previewcron/styles.css";
-import type { VercelCron } from "previewcron";
-
-export default function CustomCronPage() {
-  const crons: VercelCron[] = [
-    { path: "/api/cron/test", schedule: "0 0 * * *" },
-  ];
-
-  return <CronDashboard crons={crons} baseUrl="http://localhost:3000" />;
-}
-```
-
-## API Reference
-
-### `CronDevPage` (Default Export)
-
-Server Component that reads vercel.json and renders the dashboard.
-
-**Props:**
-
-- `vercelJsonPath?: string` - Custom path to vercel.json file
-- `baseUrl?: string` - Base URL for cron jobs (default: `http://localhost:3000`)
-- `config?: VercelConfig` - Inline config instead of reading from file
-
-### `CronDashboard` (Client Component)
-
-Client Component for rendering the dashboard.
-
-**Props:**
-
-- `crons: VercelCron[]` - Array of cron jobs
-- `baseUrl: string` - Base URL for making requests
-
-### Server Utilities
-
-```typescript
-import { readVercelJson } from 'previewcron/server';
-
-const result = await readVercelJson({
-  path: './vercel.json', // optional
-  baseUrl: 'http://localhost:3000', // optional
-  config: { crons: [...] }, // optional inline config
-});
-```
-
-### Shared Types
-
-```typescript
-import type { VercelCron, VercelConfig, CronJobWithStatus } from "previewcron";
-```
-
-### Utilities
-
-```typescript
-import { parseCronSchedule } from "previewcron";
-
-const readable = parseCronSchedule("0 0 * * *"); // "At 12:00 AM"
-```
+Prefer a hosted UI? Use [previewcron.dev](https://previewcron.dev) — paste
+your `vercel.json`, enter the preview URL, and trigger your crons from the
+browser.
 
 ## Security
 
-This package is designed for **development use only**. The dashboard:
-
-- Only works when `NODE_ENV === 'development'`
-- Returns a 404-like page in production
-- Does not include any authentication
-
-Never expose the cron testing dashboard in production environments.
-
-## Styling
-
-The package includes its own vanilla CSS stylesheet that works without Tailwind or any other CSS framework. The styles:
-
-- Use CSS custom properties for theming
-- Support light and dark mode (via `prefers-color-scheme`)
-- Are scoped under `.previewcron-root` to avoid conflicts
-- Use the JetBrains Mono font family
-
-Import the styles in your layout or page:
-
-```tsx
-import "previewcron/styles.css";
-```
-
-## How It Works
-
-1. The SDK reads your `vercel.json` file (server-side)
-2. Extracts all cron job definitions
-3. Renders a two-column dashboard UI (configuration on left, jobs on right)
-4. When you click "Run", it makes a direct fetch to your local endpoint
-5. Optionally includes an Authorization header if provided
-6. Displays the response, status code, and execution time
-
-## Testing vs Production
-
-- **Local Development (SDK)**: Test cron jobs on `localhost` with this package
-- **Preview Deployments**: Use [previewcron.dev](https://previewcron.dev) to test on Vercel preview URLs
-- **Production**: Cron jobs run automatically on schedule via Vercel
-
-## Examples
-
-### Testing a cleanup cron
-
-```json
-{
-  "crons": [
-    {
-      "path": "/api/cron/cleanup",
-      "schedule": "0 0 * * *"
-    }
-  ]
-}
-```
-
-```typescript
-// app/api/cron/cleanup/route.ts
-export async function GET() {
-  // Your cleanup logic
-  await cleanupOldData();
-
-  return Response.json({ success: true, message: "Cleanup completed" });
-}
-```
-
-Now you can test this endpoint instantly from the dashboard instead of waiting for the schedule or manually visiting the URL!
+- The dashboard binds to `127.0.0.1` only — it is never reachable from your
+  network.
+- Secrets are only sent to the target you choose; nothing leaves your machine
+  otherwise.
 
 ## License
 
-MIT
-
-## Author
-
-Ludovic Gueth
+MIT — [Ludovic Gueth](https://github.com/ludovicgueth)
 
 ## Links
 
 - [GitHub](https://github.com/ludovicgueth/previewcron.dev)
-- [Web App](https://previewcron.dev)
+- [previewcron.dev](https://previewcron.dev)

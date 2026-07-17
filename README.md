@@ -1,44 +1,34 @@
 # Preview Cron
 
-Test and trigger Vercel cron jobs on preview deployments and local environments.
+Trigger & test your Vercel cron jobs. Vercel only runs them in production —
+this project lets you test them anywhere, two ways:
 
-**Why?** Vercel only runs cron jobs in production. This tool lets you test them easily.
+## Local development → `npx previewcron`
 
-## Two Ways to Test
-
-### 1. Preview Deployments → [previewcron.dev](https://previewcron.dev)
-
-Use the web app to test cron jobs on **Vercel preview URLs**:
-
-1. Go to [previewcron.dev](https://previewcron.dev)
-2. Paste your `vercel.json` content
-3. Enter your preview URL (e.g., `https://my-app-abc123.vercel.app`)
-4. Click "Run" to trigger any cron job
-
-### 2. Local Development → npm package
-
-For testing on **localhost**, install the npm package:
+Run it in your project — no install, no setup:
 
 ```bash
-npm install previewcron --save-dev
+npx previewcron
 ```
 
-Then create a page in your Next.js app:
+It reads your `vercel.json`, detects `CRON_SECRET` and
+`VERCEL_AUTOMATION_BYPASS_SECRET`, and opens a dashboard to trigger each cron
+against your dev server. Works with any framework. See the
+[CLI documentation](./packages/previewcron/README.md).
 
-```tsx
-// app/dev/cron/page.tsx
-import "previewcron/styles.css";
-export { default } from "previewcron/page";
-```
+## Preview deployments → [previewcron.dev](https://previewcron.dev)
 
-Visit `http://localhost:3000/dev/cron` to test your cron jobs locally.
+1. Paste your `vercel.json`
+2. Enter your preview URL (e.g. `https://my-app-abc123.vercel.app`)
+3. Add your Vercel bypass token if the preview has Deployment Protection
+4. Click "Run" on any cron job
 
-See the [SDK documentation](./packages/previewcron/README.md) for more options.
+Your config is saved automatically in your browser, per project.
 
-## Why Two Methods?
+## Why two ways?
 
-- **previewcron.dev** cannot reach `localhost` due to browser security policies
-- The **npm package** runs inside your app, so it can call your local endpoints directly
+The web app cannot reach `localhost` (browser security); the CLI runs on your
+machine, so it can. Same dashboard, same experience.
 
 ## Development
 

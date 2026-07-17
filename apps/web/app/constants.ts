@@ -1,10 +1,8 @@
 // Application constants - centralized configuration values
 
-// CORS Configuration
-export const CORS_ALLOWED_ORIGIN = "https://previewcron.dev";
-
 // Local Storage
-export const STORAGE_KEY = "previewcron_saved_configs";
+export const STORAGE_KEY = "previewcron_projects";
+export const LEGACY_STORAGE_KEY = "previewcron_saved_configs";
 
 // Rate Limiting
 export const RATE_LIMIT = {
@@ -21,24 +19,6 @@ export const MAX_HEADER_VALUE_LENGTH = 1000;
 // Debounce
 export const CONFIG_DEBOUNCE_MS = 500;
 
-// Blocked headers that should not be forwarded
-export const BLOCKED_HEADERS = [
-  "host",
-  "connection",
-  "content-length",
-  "transfer-encoding",
-  "upgrade",
-  "proxy-",
-  "sec-",
-] as const;
-
-// Client-side blocked headers (subset for browser requests)
-export const CLIENT_BLOCKED_HEADERS = [
-  "host",
-  "connection",
-  "content-length",
-] as const;
-
 // Private IP ranges for SSRF protection
 export const PRIVATE_IP_PATTERNS = [
   /^127\./, // 127.0.0.0/8 (localhost)
@@ -50,9 +30,6 @@ export const PRIVATE_IP_PATTERNS = [
   /^fc00:/, // IPv6 private
   /^fe80:/, // IPv6 link-local
 ] as const;
-
-// Header name validation pattern
-export const HEADER_NAME_PATTERN = /^[a-z0-9_-]+$/i;
 
 // IPv4 validation pattern
 export const IPV4_PATTERN = /^(\d{1,3}\.){3}\d{1,3}$/;
