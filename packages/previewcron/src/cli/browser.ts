@@ -225,7 +225,13 @@ async function runJob(job: Job): Promise<void> {
     const res = await fetch("/api/trigger", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ path: job.path, authHeader, bypassToken }),
+      body: JSON.stringify({
+        index: jobs.indexOf(job),
+        path: job.path,
+        schedule: job.schedule,
+        authHeader,
+        bypassToken,
+      }),
     });
     const result: TriggerResult = await res.json();
 
