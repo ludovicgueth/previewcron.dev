@@ -1,132 +1,33 @@
+const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+/** "H M" → "h:mm AM/PM", or null when either field is not a plain in-range number. */
+function formatTime(hour: string, minute: string): string | null {
+  const h = parseInt(hour);
+  const m = parseInt(minute);
+  if (isNaN(h) || isNaN(m) || h < 0 || h > 23 || m < 0 || m > 59) return null;
+  const displayHour = h > 12 ? h - 12 : h === 0 ? 12 : h;
+  return `${displayHour}:${m.toString().padStart(2, "0")} ${h >= 12 ? "PM" : "AM"}`;
+}
+
 export function parseCronSchedule(schedule: string): string {
   const parts = schedule.split(" ");
-
-  if (parts.length !== 5) {
-    return schedule;
-  }
-
+  if (parts.length !== 5) return schedule;
   const [minute, hour, dayOfMonth, month, dayOfWeek] = parts;
+  if (month !== "*") return schedule;
 
-  // Every minute
-  if (schedule === "* * * * *") {
-    return "Every minute";
+  if (dayOfMonth === "*" && dayOfWeek === "*") {
+    if (minute === "*" && hour === "*") return "Every minute";
+    if (minute.startsWith("*/") && hour === "*") return `Every ${minute.slice(2)} minutes`;
+    if (minute === "0" && hour === "*") return "Every hour";
+    if (minute !== "*" && hour.startsWith("*/")) return `Every ${hour.slice(2)} hours`;
   }
+  if (minute === "*" || hour === "*") return schedule;
 
-  // Every X minutes
-  if (
-    minute.startsWith("*/") &&
-    hour === "*" &&
-    dayOfMonth === "*" &&
-    month === "*" &&
-    dayOfWeek === "*"
-  ) {
-    const interval = minute.slice(2);
-    return `Every ${interval} minutes`;
-  }
-
-  // Every hour
-  if (
-    minute === "0" &&
-    hour === "*" &&
-    dayOfMonth === "*" &&
-    month === "*" &&
-    dayOfWeek === "*"
-  ) {
-    return "Every hour";
-  }
-
-  // Every X hours
-  if (
-    minute !== "*" &&
-    hour.startsWith("*/") &&
-    dayOfMonth === "*" &&
-    month === "*" &&
-    dayOfWeek === "*"
-  ) {
-    const interval = hour.slice(2);
-    return `Every ${interval} hours`;
-  }
-
-  // Specific time daily
-  if (
-    minute !== "*" &&
-    hour !== "*" &&
-    dayOfMonth === "*" &&
-    month === "*" &&
-    dayOfWeek === "*"
-  ) {
-    const hourNum = parseInt(hour);
-    const minuteNum = parseInt(minute);
-
-    if (isNaN(hourNum) || isNaN(minuteNum) || hourNum < 0 || hourNum > 23 || minuteNum < 0 || minuteNum > 59) {
-      return schedule;
-    }
-
-    const period = hourNum >= 12 ? "PM" : "AM";
-    const displayHour = hourNum > 12 ? hourNum - 12 : hourNum === 0 ? 12 : hourNum;
-    const time = `${displayHour}:${minuteNum.toString().padStart(2, "0")}`;
-
-    return `At ${time} ${period}`;
-  }
-
-  // Specific day of week
-  if (
-    minute !== "*" &&
-    hour !== "*" &&
-    dayOfMonth === "*" &&
-    month === "*" &&
-    dayOfWeek !== "*"
-  ) {
-    const days = [
-      "Sunday",
-      "Monday",
-      "Tuesday",
-      "Wednesday",
-      "Thursday",
-      "Friday",
-      "Saturday",
-    ];
-    const dayName = days[parseInt(dayOfWeek)] || dayOfWeek;
-    const hourNum = parseInt(hour);
-    const minuteNum = parseInt(minute);
-
-    if (isNaN(hourNum) || isNaN(minuteNum) || hourNum < 0 || hourNum > 23 || minuteNum < 0 || minuteNum > 59) {
-      return schedule;
-    }
-
-    const period = hourNum >= 12 ? "PM" : "AM";
-    const displayHour = hourNum > 12 ? hourNum - 12 : hourNum === 0 ? 12 : hourNum;
-    const time = `${displayHour}:${minuteNum.toString().padStart(2, "0")}`;
-
-    return `At ${time} ${period} on ${dayName}`;
-  }
-
-  // Specific day of month
-  if (
-    minute !== "*" &&
-    hour !== "*" &&
-    dayOfMonth !== "*" &&
-    month === "*" &&
-    dayOfWeek === "*"
-  ) {
-    const hourNum = parseInt(hour);
-    const minuteNum = parseInt(minute);
-
-    if (isNaN(hourNum) || isNaN(minuteNum) || hourNum < 0 || hourNum > 23 || minuteNum < 0 || minuteNum > 59) {
-      return schedule;
-    }
-
-    const period = hourNum >= 12 ? "PM" : "AM";
-    const displayHour = hourNum > 12 ? hourNum - 12 : hourNum === 0 ? 12 : hourNum;
-    const time = `${displayHour}:${minuteNum.toString().padStart(2, "0")}`;
-
-    if (dayOfMonth.startsWith("*/")) {
-      const interval = dayOfMonth.slice(2);
-      return `At ${time} ${period} every ${interval} days`;
-    }
-
-    return `At ${time} ${period} on day ${dayOfMonth}`;
-  }
-
-  return schedule;
+  const time = formatTime(hour, minute);
+  if (!time) return schedule;
+  if (dayOfMonth === "*" && dayOfWeek === "*") return `At ${time}`;
+  if (dayOfMonth === "*") return `At ${time} on ${DAYS[parseInt(dayOfWeek)] || dayOfWeek}`;
+  if (dayOfWeek !== "*") return schedule;
+  if (dayOfMonth.startsWith("*/")) return `At ${time} every ${dayOfMonth.slice(2)} days`;
+  return `At ${time} on day ${dayOfMonth}`;
 }

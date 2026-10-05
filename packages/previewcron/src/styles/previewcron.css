@@ -1,8 +1,4 @@
-/* =================================================================
-   PreviewCron - Vanilla CSS
-   A zero-dependency stylesheet for the PreviewCron components
-   Matches the previewcron.dev theme
-   ================================================================= */
+/* Preview Cron dashboard: zero-dependency stylesheet matching previewcron.dev */
 
 /* CSS Custom Properties (Theming) */
 .previewcron-root {
@@ -10,16 +6,11 @@
   --pc-background: oklch(0.99 0 0);
   --pc-foreground: oklch(0 0 0);
   --pc-card: oklch(1 0 0);
-  --pc-card-foreground: oklch(0 0 0);
-  --pc-muted: oklch(0.97 0 0);
   --pc-muted-foreground: oklch(0.44 0 0);
   --pc-secondary: oklch(0.94 0 0);
   --pc-secondary-foreground: oklch(0 0 0);
   --pc-border: oklch(0.92 0 0);
-  --pc-input: oklch(0.94 0 0);
   --pc-ring: oklch(0 0 0);
-  --pc-destructive: oklch(0.63 0.19 23.03);
-  --pc-destructive-foreground: oklch(1 0 0);
 
   /* Status Colors */
   /* Success is deliberately neutral — the product theme is monochrome zinc,
@@ -71,16 +62,11 @@
     --pc-background: oklch(0 0 0);
     --pc-foreground: oklch(1 0 0);
     --pc-card: oklch(0.14 0 0);
-    --pc-card-foreground: oklch(1 0 0);
-    --pc-muted: oklch(0.23 0 0);
     --pc-muted-foreground: oklch(0.72 0 0);
     --pc-secondary: oklch(0.25 0 0);
     --pc-secondary-foreground: oklch(1 0 0);
     --pc-border: oklch(0.26 0 0);
-    --pc-input: oklch(0.32 0 0);
     --pc-ring: oklch(0.72 0 0);
-    --pc-destructive: oklch(0.69 0.20 23.91);
-    --pc-destructive-foreground: oklch(0 0 0);
 
     /* Dark status colors */
     --pc-success: oklch(1 0 0);
@@ -97,9 +83,7 @@
   }
 }
 
-/* =================================================================
-   Dashboard Component
-   ================================================================= */
+/* Dashboard Component */
 
 .pc-dashboard {
   min-height: 100vh;
@@ -130,14 +114,12 @@
   color: var(--pc-foreground);
   margin: 0;
   line-height: 1.2;
-  font-family: var(--pc-font-mono);
 }
 
 .pc-dashboard__subtitle {
   margin-top: var(--pc-space-2);
   color: var(--pc-muted-foreground);
   margin-bottom: 0;
-  font-family: var(--pc-font-mono);
 }
 
 .pc-dashboard__github {
@@ -151,7 +133,6 @@
   color: var(--pc-foreground);
   font-size: 0.875rem;
   font-weight: 500;
-  font-family: var(--pc-font-mono);
   text-decoration: none;
   transition: background-color 0.15s ease;
   flex-shrink: 0;
@@ -196,7 +177,6 @@
   font-weight: 500;
   color: var(--pc-foreground);
   margin: 0;
-  font-family: var(--pc-font-mono);
 }
 
 .pc-dashboard__empty-text {
@@ -204,12 +184,9 @@
   font-size: 0.875rem;
   color: var(--pc-muted-foreground);
   margin-bottom: 0;
-  font-family: var(--pc-font-mono);
 }
 
-/* =================================================================
-   Two-Column Layout
-   ================================================================= */
+/* Two-Column Layout */
 
 .pc-layout {
   display: grid;
@@ -233,9 +210,7 @@
   min-width: 0;
 }
 
-/* =================================================================
-   Auth Card (Configuration Panel)
-   ================================================================= */
+/* Auth Card (Configuration Panel) */
 
 .pc-auth-card {
   border-radius: var(--pc-radius);
@@ -250,12 +225,9 @@
   font-weight: 600;
   color: var(--pc-foreground);
   margin: 0 0 var(--pc-space-4) 0;
-  font-family: var(--pc-font-mono);
 }
 
-/* =================================================================
-   Authorization Input
-   ================================================================= */
+/* Authorization Input */
 
 .pc-auth {
   /* No margin needed, card handles spacing */
@@ -267,7 +239,6 @@
   font-weight: 500;
   color: var(--pc-muted-foreground);
   margin-bottom: var(--pc-space-2);
-  font-family: var(--pc-font-mono);
 }
 
 .pc-auth__input {
@@ -293,9 +264,7 @@
   box-shadow: 0 0 0 2px var(--pc-ring);
 }
 
-/* =================================================================
-   Jobs List Component
-   ================================================================= */
+/* Jobs List Component */
 
 .pc-jobs-list {
   border-radius: var(--pc-radius);
@@ -322,7 +291,6 @@
   font-weight: 600;
   color: var(--pc-foreground);
   margin: 0;
-  font-family: var(--pc-font-mono);
 }
 
 .pc-jobs-list__subtitle {
@@ -330,7 +298,6 @@
   font-size: 0.875rem;
   color: var(--pc-muted-foreground);
   margin-bottom: 0;
-  font-family: var(--pc-font-mono);
 }
 
 .pc-jobs-list__count {
@@ -342,7 +309,6 @@
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--pc-secondary-foreground);
-  font-family: var(--pc-font-mono);
 }
 
 .pc-jobs-list__content {
@@ -355,7 +321,6 @@
   margin-bottom: var(--pc-space-4);
   font-size: 0.875rem;
   color: var(--pc-muted-foreground);
-  font-family: var(--pc-font-mono);
 }
 
 .pc-jobs-list__items {
@@ -364,9 +329,7 @@
   gap: var(--pc-space-3);
 }
 
-/* =================================================================
-   Job Item Component
-   ================================================================= */
+/* Job Item Component */
 
 .pc-job-item {
   position: relative;
@@ -402,7 +365,6 @@
 }
 
 .pc-job-item__path {
-  font-family: var(--pc-font-mono);
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--pc-foreground);
@@ -440,7 +402,6 @@
   margin-top: var(--pc-space-2);
   font-size: 0.875rem;
   color: var(--pc-muted-foreground);
-  font-family: var(--pc-font-mono);
 }
 
 .pc-job-item__schedule {
@@ -448,7 +409,6 @@
   background-color: var(--pc-secondary);
   padding: 0.125rem 0.5rem;
   border-radius: var(--pc-radius);
-  font-family: var(--pc-font-mono);
   font-size: 0.75rem;
 }
 
@@ -458,7 +418,6 @@
 
 .pc-job-item__description {
   color: var(--pc-muted-foreground);
-  font-family: var(--pc-font-mono);
 }
 
 /* Meta Row (Last run, duration, status code) */
@@ -469,14 +428,12 @@
   margin-top: var(--pc-space-2);
   font-size: 0.75rem;
   color: var(--pc-muted-foreground);
-  font-family: var(--pc-font-mono);
 }
 
 .pc-job-item__duration {
   display: inline-block;
   padding: 0.125rem 0.375rem;
   border-radius: var(--pc-radius);
-  font-family: var(--pc-font-mono);
   background-color: var(--pc-secondary);
   color: var(--pc-secondary-foreground);
 }
@@ -490,7 +447,6 @@
   display: inline-block;
   padding: 0.125rem 0.375rem;
   border-radius: var(--pc-radius);
-  font-family: var(--pc-font-mono);
 }
 
 .pc-job-item__status-code[data-success="true"] {
@@ -513,7 +469,6 @@
   border: 1px solid;
   padding: var(--pc-space-3);
   font-size: 0.75rem;
-  font-family: var(--pc-font-mono);
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -581,9 +536,7 @@
   opacity: 0.75;
 }
 
-/* =================================================================
-   Animations
-   ================================================================= */
+/* Animations */
 
 @keyframes pc-spin {
   from {

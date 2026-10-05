@@ -1,17 +1,17 @@
 {
   "name": "previewcron",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Trigger & test your Vercel cron jobs locally or on preview deployments",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ludovicgueth/previewcron.dev"
+    "url": "git+https://github.com/ludovicgueth/previewcron.dev.git"
   },
   "homepage": "https://previewcron.dev",
   "bugs": {
     "url": "https://github.com/ludovicgueth/previewcron.dev/issues"
   },
   "bin": {
-    "previewcron": "./dist/cli/index.mjs"
+    "previewcron": "dist/cli/index.mjs"
   },
   "engines": {
     "node": ">=18"
@@ -26,7 +26,6 @@
     "test": "node --test test/cli.test.mjs",
     "prepack": "cp ../../LICENSE .",
     "prepublishOnly": "bun run build && bun run test",
-    "lint": "echo \"No lint configured\"",
     "type-check": "tsc --noEmit"
   },
   "keywords": [

@@ -12,25 +12,15 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "http";
 import { once } from "events";
 import { readFile } from "fs/promises";
-import { readFileSync } from "fs";
 import { join, dirname } from "path";
 import { text } from "stream/consumers";
 import { fileURLToPath } from "url";
 import { spawn } from "child_process";
+import { version } from "../../package.json";
 import type { VercelCron } from "../types";
 
 const DEFAULT_PORT = 4747;
 const DEFAULT_BASE_URL = "http://localhost:3000";
-
-/** Read the version from the package's own package.json (dist/cli → package root). */
-function getVersion(): string {
-  try {
-    const pkgUrl = new URL("../../package.json", import.meta.url);
-    return JSON.parse(readFileSync(pkgUrl, "utf-8")).version ?? "0.0.0";
-  } catch {
-    return "0.0.0";
-  }
-}
 
 interface CliOptions {
   port: number;
@@ -161,6 +151,9 @@ async function readCrons(path?: string): Promise<{ crons: VercelCron[]; filePath
     }
   }
   if (path && !config) throw new Error(`Config file not found: ${path}`);
+  if (config?.schedules) {
+    console.warn(`${filePath} declares "schedules" (Vercel beta), which previewcron does not support yet.`);
+  }
   if (!path && config?.crons === undefined) {
     const buildOutput = join(cwd, ".vercel/output/config.json");
     const output = await readConfig(buildOutput);
@@ -168,9 +161,6 @@ async function readCrons(path?: string): Promise<{ crons: VercelCron[]; filePath
   }
   if (!filePath) {
     console.warn("No vercel.json found. Using vercel.ts or vercel.toml? Run `vercel dev` or `vercel build` once to compile it.");
-  }
-  if (config?.schedules) {
-    console.warn(`${filePath} declares "schedules" (Vercel beta), which previewcron does not support yet.`);
   }
 
   const declared = config?.crons;
@@ -181,7 +171,8 @@ async function readCrons(path?: string): Promise<{ crons: VercelCron[]; filePath
     if (!valid) console.warn(`Skipping invalid cron in ${filePath}: ${JSON.stringify(entry)}`);
     return valid;
   });
-  return { crons, filePath };
+  // Only the known fields reach the page: extra keys must not become job state.
+  return { crons: crons.map(({ path, schedule }) => ({ path, schedule })), filePath };
 }
 
 function htmlShell(initial: unknown): string {
@@ -307,22 +298,18 @@ async function listen(server: Server, port: number): Promise<number> {
   }
 }
 
+/** Best-effort: the URL is printed for manual opening anyway. */
 function openBrowser(url: string): void {
-  const command =
+  const [command, ...args] =
     process.platform === "darwin"
-      ? "open"
+      ? ["open", url]
       : process.platform === "win32"
-        ? "cmd"
-        : "xdg-open";
-  const args = process.platform === "win32" ? ["/c", "start", "", url] : [url];
+        ? ["cmd", "/c", "start", "", url]
+        : ["xdg-open", url];
   try {
-    const child = spawn(command, args, { stdio: "ignore", detached: true });
-    child.on("error", () => {
-      /* Browser open is best-effort. */
-    });
-    child.unref();
+    spawn(command, args, { stdio: "ignore", detached: true }).on("error", () => {}).unref();
   } catch {
-    /* Ignore — the URL is printed for manual opening. */
+    /* Ignore. */
   }
 }
 
@@ -337,7 +324,7 @@ async function main(): Promise<void> {
   }
 
   if (options === "help") return printHelp();
-  if (options === "version") return console.log(getVersion());
+  if (options === "version") return console.log(version);
 
   const { port, baseUrl, vercelJsonPath, open } = options;
 

@@ -62,7 +62,7 @@ test("replays crons like Vercel and only serves its own origin", TIMEOUT, async 
   const { port } = await startCli(
     t,
     {
-      "vercel.json": JSON.stringify({ crons: [cron, { path: "no-slash", schedule: "* * * * *" }] }),
+      "vercel.json": JSON.stringify({ crons: [{ ...cron, statusCode: "<img src=x onerror=alert(1)>" }, { path: "no-slash", schedule: "* * * * *" }] }),
       ".env.local": 'export CRON_SECRET="s3cret#1" # the "real" one\nVERCEL_AUTOMATION_BYPASS_SECRET=byp4ss#comment\n',
     },
     ["--base-url", base]
