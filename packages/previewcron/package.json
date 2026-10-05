@@ -23,7 +23,9 @@
     "build:css": "cp ./src/styles/previewcron.css ./dist/previewcron.css",
     "build:js": "tsup",
     "build": "bun run build:js && bun run build:css",
-    "prepublishOnly": "bun run build",
+    "test": "node --test test/cli.test.mjs",
+    "prepack": "cp ../../LICENSE .",
+    "prepublishOnly": "bun run build && bun run test",
     "lint": "echo \"No lint configured\"",
     "type-check": "tsc --noEmit"
   },
